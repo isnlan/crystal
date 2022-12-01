@@ -1,24 +1,8 @@
-[package]
-name = "crystal"
-version = "0.1.0"
-edition = "2021"
-
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
-[dependencies]
-evm = "0.37.0"
-# pallet-evm = "5.0.0"
-ed25519-dalek = { version = "1.0.0", default-features = false, features = ["alloc", "u64_backend"] }
-ethereum-types = "0.14.0"
-rocksdb = "0.19.0"
-ethabi = "18.0.0"
-web3 = "0.18.0"
-k256 = "0.11.6"
-# ethnum = "1.3.2"
-# https://github.com/gakonst/ethers-rs
-# https://github.com/sorpaas/rust-evm
-# https://github.com/paritytech/frontier
-# ethers-core = "1.0.2"
-# ethers-signers = "1.0.2"
-# revm = "2.3.1"
-# bigint = "4.4.3"
+[workspace]
+members = [
+    "crystal-node",
+    "core/json-rpc",
+    "core/auth",
+    "libs/message",
+    "libs/result",
+]
