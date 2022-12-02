@@ -18,7 +18,7 @@ impl Server {
 
     async fn run(&mut self) -> result::Result<()> {
         let bus = self.bus.clone();
-        run_server(bus).await;
+        run_server(bus).await?;
 
         while let Some(msg) = self.rx.recv().await {
             println!("======");
