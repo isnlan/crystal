@@ -5,7 +5,7 @@ use tracing_subscriber::FmtSubscriber;
 
 fn init_log() {
     let subscriber = FmtSubscriber::builder()
-        .with_max_level(Level::DEBUG)
+        .with_max_level(Level::INFO)
         .with_file(true)
         .with_line_number(true)
         // completes the builder.

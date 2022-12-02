@@ -22,8 +22,8 @@ impl Server {
     }
 
     async fn process(&mut self, msg: Message) -> result::Result<()> {
-        println!("msg {:?}", msg);
-
+        println!("auth msg {:?}", msg);
+        self.bus.jsonrpc_sender.send(Message::NetworkMessage(13));
         Ok(())
     }
 }

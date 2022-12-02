@@ -10,3 +10,10 @@ message = { path = "../../libs/message" }
 result = { path = "../../libs/result" }
 tokio = { version = "1.22.0", features = ["full"] }
 tracing = "0.1.36"
+
+jsonrpsee = { version = "0.16.2", features = ["full"] }
+serde_json = { version = "1" }
+tower-http = { version = "0.3.4", features = ["full"] }
+tower = { version = "0.4.13", features = ["full"] }
+hyper = "0.14.20"
+console-subscriber = "0.1.8"
