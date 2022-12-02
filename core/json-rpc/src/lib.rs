@@ -1,8 +1,8 @@
 use std::{future::Future, sync::Arc};
 
+use crate::jsonrpc::run_server;
 use message::{Message, MessageBus};
 use tokio::sync::mpsc::Receiver;
-use crate::jsonrpc::run_server;
 
 mod jsonrpc;
 
@@ -17,12 +17,11 @@ impl Server {
     }
 
     async fn run(&mut self) -> result::Result<()> {
-        tokio::task::spawn(||  {
-            run_server(self.bus.clone()).await;
-        })
+        let bus = self.bus.clone();
+        run_server(bus).await;
 
-        println!("======");
         while let Some(msg) = self.rx.recv().await {
+            println!("======");
             self.process(msg).await?;
         }
 
