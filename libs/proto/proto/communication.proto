@@ -1,0 +1,20 @@
+syntax = "proto3";
+
+import "blockchain.proto";
+import "consensus.proto";
+
+message InnerMessage {
+    oneof content {
+        bytes RawBytes = 1;
+        Status Status = 2;
+        RichStatus RichStatus = 3;
+        SignedProposal SignedProposal = 4;
+        Block Block = 5;
+        BlockWithProof BlockWithProof = 6;
+        BlockHeader BlockHeader = 7;
+        BlockTxs BlockTxs = 8;
+        BlackList BlackList = 9;
+        StateSignal StateSignal = 10;
+        CompactSignedProposal CompactSignedProposal = 11;
+    }
+}

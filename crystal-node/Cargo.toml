@@ -27,7 +27,8 @@ tracing = "0.1.36"
 tracing-subscriber = "0.3.15"
 anyhow = "1.0.66"
 
-message = { path = "../libs/message" }
+proto = { path = "../libs/proto" }
 json-rpc = { path = "../core/json-rpc" }
 auth = { path = "../core/auth" }
+chain = { path = "../core/chain" }
 

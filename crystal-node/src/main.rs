@@ -1,4 +1,4 @@
-use message::MessageBus;
+use proto::MessageBus;
 use std::sync::Arc;
 use tracing::Level;
 use tracing_subscriber::FmtSubscriber;
@@ -17,16 +17,26 @@ fn init_log() {
 async fn run() -> Result<(), Box<dyn std::error::Error>> {
     let (jsonrpc_sender, jsonrpc_reciver) = tokio::sync::mpsc::channel(1024);
     let (auth_sender, auth_reciver) = tokio::sync::mpsc::channel(1024);
+    let (chain_sender, chain_reciver) = tokio::sync::mpsc::channel(1024);
 
     let bus = Arc::new(MessageBus {
         jsonrpc_sender,
         auth_sender,
+        chain_sender,
     });
 
-    let jsonrpc = json_rpc::Server::new(jsonrpc_reciver, bus.clone());
-    let auth = auth::Server::new(auth_reciver, bus);
+    let bus_clone = bus.clone();
+    tokio::spawn(async move {
+        let mut jsonrpc = json_rpc::Server::new(jsonrpc_reciver, bus_clone);
+        jsonrpc.run().await.unwrap();
+    });
 
-    let _ = tokio::join!(jsonrpc, auth);
+    println!("aaaaaaaa");
+
+    let auth = auth::Server::new(auth_reciver, bus.clone());
+    let chain = chain::Server::new(chain_reciver, bus);
+
+    let _ = tokio::join!(auth, chain);
 
     Ok(())
 }

@@ -1,6 +1,6 @@
 use std::{future::Future, sync::Arc};
 
-use message::{Message, MessageBus};
+use proto::{Message, MessageBus};
 use tokio::sync::mpsc::Receiver;
 
 pub struct Server {
@@ -23,7 +23,6 @@ impl Server {
 
     async fn process(&mut self, msg: Message) -> result::Result<()> {
         println!("auth msg {:?}", msg);
-        self.bus.jsonrpc_sender.send(Message::NetworkMessage(13));
         Ok(())
     }
 }

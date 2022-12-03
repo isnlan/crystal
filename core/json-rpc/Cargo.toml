@@ -6,7 +6,7 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-message = { path = "../../libs/message" }
+proto = { path = "../../libs/proto" }
 result = { path = "../../libs/result" }
 tokio = { version = "1.22.0", features = ["full"] }
 tracing = "0.1.36"

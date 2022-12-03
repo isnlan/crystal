@@ -104,7 +104,7 @@ dependencies = [
 name = "auth"
 version = "0.1.0"
 dependencies = [
- "message",
+ "proto",
  "result",
  "tokio",
  "tracing",
@@ -363,6 +363,16 @@ name = "cfg-if"
 version = "1.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "baf1de4339761588bc0619e3cbc0120ee582ebb74b53b4efbf79117bd2da40fd"
+
+[[package]]
+name = "chain"
+version = "0.1.0"
+dependencies = [
+ "proto",
+ "result",
+ "tokio",
+ "tracing",
+]
 
 [[package]]
 name = "clang-sys"
@@ -1482,7 +1492,7 @@ dependencies = [
  "console-subscriber",
  "hyper",
  "jsonrpsee",
- "message",
+ "proto",
  "result",
  "serde_json",
  "tokio",
@@ -1864,13 +1874,14 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "auth",
+ "chain",
  "ed25519-dalek",
  "ethabi 18.0.0",
  "ethereum-types 0.14.1",
  "evm",
  "json-rpc",
  "k256",
- "message",
+ "proto",
  "rocksdb",
  "tokio",
  "tracing",
@@ -2232,6 +2243,38 @@ dependencies = [
 ]
 
 [[package]]
+name = "proto"
+version = "0.1.0"
+dependencies = [
+ "protobuf",
+ "rustc-serialize",
+ "serde",
+ "serde_derive",
+ "tokio",
+]
+
+[[package]]
+name = "protobuf"
+version = "3.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b55bad9126f378a853655831eb7363b7b01b81d19f8cb1218861086ca4a1a61e"
+dependencies = [
+ "bytes",
+ "once_cell",
+ "protobuf-support",
+ "thiserror",
+]
+
+[[package]]
+name = "protobuf-support"
+version = "3.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a5d4d7b8601c814cfb36bcebb79f0e61e45e1e93640cf778837833bbed05c372"
+dependencies = [
+ "thiserror",
+]
+
+[[package]]
 name = "quote"
 version = "1.0.21"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2475,6 +2518,12 @@ name = "rustc-hex"
 version = "2.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3e75f6a532d0fd9f7f13144f392b6ad56a32696bfcd9c78f797f16bbb6f072d6"
+
+[[package]]
+name = "rustc-serialize"
+version = "0.3.24"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "dcf128d1287d2ea9d80910b5f1120d0b8eede3fbf1abe91c40d39ea7d51e6fda"
 
 [[package]]
 name = "rustc_version"

@@ -3,6 +3,7 @@ members = [
     "crystal-node",
     "core/json-rpc",
     "core/auth",
+    "core/chain",
     "libs/message",
     "libs/result",
 ]
