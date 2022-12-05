@@ -1,14 +1,12 @@
 use proto::{Message, MessageBus};
 use std::sync::Arc;
-use signal_hook::consts::{SIGHUP, SIGINT, SIGQUIT, SIGTERM};
-use signal_hook::iterator::Signals;
-use tracing::Level;
+use signal_hook::{consts::{SIGHUP, SIGINT, SIGQUIT, SIGTERM}, iterator::Signals};
 use tracing::log::info;
 use tracing_subscriber::FmtSubscriber;
 
 fn init_log() {
     let subscriber = FmtSubscriber::builder()
-        .with_max_level(Level::INFO)
+        .with_max_level(tracing::Level::INFO)
         .with_file(true)
         .with_line_number(true)
         // completes the builder.
