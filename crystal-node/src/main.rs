@@ -1,6 +1,9 @@
 use proto::{Message, MessageBus};
+use signal_hook::{
+    consts::{SIGHUP, SIGINT, SIGQUIT, SIGTERM},
+    iterator::Signals,
+};
 use std::sync::Arc;
-use signal_hook::{consts::{SIGHUP, SIGINT, SIGQUIT, SIGTERM}, iterator::Signals};
 use tracing::log::info;
 use tracing_subscriber::FmtSubscriber;
 
@@ -49,7 +52,7 @@ async fn run() -> Result<(), Box<dyn std::error::Error>> {
     for signal in &mut sigs {
         info!("Received signal {:?}", signal);
         match signal {
-            SIGTERM | SIGQUIT | SIGINT  => {
+            SIGTERM | SIGQUIT | SIGINT => {
                 bus.auth_sender.send(Message::Close).await?;
                 bus.jsonrpc_sender.send(Message::Close).await?;
                 bus.chain_sender.send(Message::Close).await?;
