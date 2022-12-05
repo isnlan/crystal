@@ -1,6 +1,9 @@
-use proto::MessageBus;
+use proto::{Message, MessageBus};
 use std::sync::Arc;
+use signal_hook::consts::{SIGHUP, SIGINT, SIGQUIT, SIGTERM};
+use signal_hook::iterator::Signals;
 use tracing::Level;
+use tracing::log::info;
 use tracing_subscriber::FmtSubscriber;
 
 fn init_log() {
@@ -31,12 +34,37 @@ async fn run() -> Result<(), Box<dyn std::error::Error>> {
         jsonrpc.run().await.unwrap();
     });
 
-    println!("aaaaaaaa");
+    let bus_clone = bus.clone();
+    tokio::spawn(async move {
+        let mut ath = auth::Server::new(auth_reciver, bus_clone);
+        ath.run().await.unwrap();
+    });
 
-    let auth = auth::Server::new(auth_reciver, bus.clone());
-    let chain = chain::Server::new(chain_reciver, bus);
+    let bus_clone = bus.clone();
+    tokio::spawn(async move {
+        let mut chain = chain::Server::new(chain_reciver, bus_clone);
+        chain.run().await.unwrap();
+    });
 
-    let _ = tokio::join!(auth, chain);
+    const SIGNALS: &[std::ffi::c_int] = &[SIGHUP, SIGTERM, SIGQUIT, SIGINT];
+    let mut sigs = Signals::new(SIGNALS)?;
+    for signal in &mut sigs {
+        info!("Received signal {:?}", signal);
+        match signal {
+            SIGTERM | SIGQUIT | SIGINT  => {
+                bus.auth_sender.send(Message::Close).await?;
+                bus.jsonrpc_sender.send(Message::Close).await?;
+                bus.chain_sender.send(Message::Close).await?;
+                break;
+            }
+            SIGHUP => {
+                info!("rotator log");
+            }
+            _ => {
+                break;
+            }
+        }
+    }
 
     Ok(())
 }

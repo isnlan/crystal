@@ -24,7 +24,14 @@ impl Server {
         });
 
         while let Some(msg) = self.rx.recv().await {
-            self.process(msg).await?;
+            match msg {
+                Message::Close => {
+                    break;
+                }
+                _ => {
+                    self.process(msg).await?;
+                }
+            }
         }
 
         Ok(())
@@ -45,7 +52,6 @@ async fn run_json_rpc_server(bus: Arc<MessageBus>) -> result::Result<()> {
         .allow_headers([hyper::header::CONTENT_TYPE]);
     let middleware = tower::ServiceBuilder::new().layer(cors);
 
-    println!("sssssss");
     let server = ServerBuilder::default()
         .set_host_filtering(AllowHosts::Any)
         .set_middleware(middleware)

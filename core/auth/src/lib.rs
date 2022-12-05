@@ -13,7 +13,7 @@ impl Server {
         Self { tx, bus }
     }
 
-    async fn run(&mut self) -> result::Result<()> {
+    pub async fn run(&mut self) -> result::Result<()> {
         while let Some(msg) = self.tx.recv().await {
             self.process(msg).await?;
         }

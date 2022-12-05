@@ -27,6 +27,8 @@ tracing = "0.1.36"
 tracing-subscriber = "0.3.15"
 anyhow = "1.0.66"
 
+signal-hook = "0.3.14"
+
 proto = { path = "../libs/proto" }
 json-rpc = { path = "../core/json-rpc" }
 auth = { path = "../core/auth" }
