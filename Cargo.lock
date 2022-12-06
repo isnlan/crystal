@@ -761,6 +761,13 @@ checksum = "0206175f82b8d6bf6652ff7d71a1e27fd2e4efde587fd368662814d6ec1d9ce0"
 
 [[package]]
 name = "evm"
+version = "0.1.0"
+dependencies = [
+ "evm 0.37.0",
+]
+
+[[package]]
+name = "evm"
 version = "0.37.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f4448c65b71e8e2b9718232d84d09045eeaaccb2320494e6bd6dbf7e58fec8ff"
@@ -1878,7 +1885,7 @@ dependencies = [
  "ed25519-dalek",
  "ethabi 18.0.0",
  "ethereum-types 0.14.1",
- "evm",
+ "evm 0.37.0",
  "json-rpc",
  "k256",
  "proto",

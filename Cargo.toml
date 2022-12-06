@@ -6,4 +6,5 @@ members = [
     "core/chain",
     "libs/message",
     "libs/result",
+    "libs/evm",
 ]
