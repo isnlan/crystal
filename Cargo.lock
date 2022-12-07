@@ -764,6 +764,13 @@ name = "evm"
 version = "0.1.0"
 dependencies = [
  "evm 0.37.0",
+ "hex",
+ "log",
+ "parity-scale-codec 3.2.1",
+ "primitive-types 0.12.1",
+ "rlp",
+ "scale-info",
+ "serde",
 ]
 
 [[package]]
