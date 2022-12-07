@@ -63,24 +63,24 @@ pub fn call(left: usize, right: usize) -> usize {
     let caller = H160::from_str("0x0000000000000000000000000000000000000001").unwrap();
 
     let mut state = BTreeMap::new();
-    // state.insert(
-    //     H160::from_str("0x1000000000000000000000000000000000000000").unwrap(),
-    //     MemoryAccount {
-    //         nonce: U256::one(),
-    //         balance: U256::from(10000000),
-    //         storage: BTreeMap::new(),
-    //         code: hex::decode(code).unwrap(),
-    //     },
-    // );
-    // state.insert(
-    //     H160::from_str("0xf000000000000000000000000000000000000000").unwrap(),
-    //     MemoryAccount {
-    //         nonce: U256::one(),
-    //         balance: U256::from(10000000),
-    //         storage: BTreeMap::new(),
-    //         code: Vec::new(),
-    //     },
-    // );
+    state.insert(
+        contract_address,
+        MemoryAccount {
+            nonce: U256::one(),
+            balance: U256::from(10000000),
+            storage: BTreeMap::new(),
+            code: hex::decode(code).unwrap(),
+        },
+    );
+    state.insert(
+        caller,
+        MemoryAccount {
+            nonce: U256::one(),
+            balance: U256::from(10000000),
+            storage: BTreeMap::new(),
+            code: Vec::new(),
+        },
+    );
 
     let mut backend = MemoryBackend::new(&vicinity, state);
     let metadata = StackSubstateMetadata::new(gas_limit, &config);
