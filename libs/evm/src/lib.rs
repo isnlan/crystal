@@ -103,7 +103,8 @@ pub fn call(left: usize, right: usize) -> usize {
 
     let gas = executor.gas();
     let (values, logs) = executor.into_state().deconstruct();
-    backend.clone().apply(values, logs, false);
+    let mut bc = backend.clone();
+        bc.apply(values, logs, false);
 
 
     {
