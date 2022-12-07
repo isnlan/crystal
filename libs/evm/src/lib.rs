@@ -84,9 +84,9 @@ pub fn call(left: usize, right: usize) -> usize {
 
     let mut backend = MemoryBackend::new(&vicinity, state);
     let metadata = StackSubstateMetadata::new(gas_limit, &config);
-    let state = MemoryStackState::new(metadata, &backend);
+    let mstate = MemoryStackState::new(metadata, &backend);
     let precompile = BTreeMap::new();
-    let mut executor = StackExecutor::new_with_precompiles(state.clone(), &config, &precompile);
+    let mut executor = StackExecutor::new_with_precompiles(mstate, &config, &precompile);
 
     let code = Rc::new(hex::decode(code).unwrap());
     // set value
@@ -103,9 +103,7 @@ pub fn call(left: usize, right: usize) -> usize {
 
     let gas = executor.gas();
     let (values, logs) = executor.into_state().deconstruct();
-    let mut bc = backend.clone();
-        bc.apply(values, logs, false);
-
+    backend.apply(values, logs, false);
 
     {
         let data = hex::decode("6d4ce63c").unwrap();
@@ -116,7 +114,9 @@ pub fn call(left: usize, right: usize) -> usize {
         };
         let mut runtime = evm::Runtime::new(code, Rc::new(data), context, &config);
 
-        let mut executor = StackExecutor::new_with_precompiles(state.clone(), &config, &precompile);
+        let metadata = StackSubstateMetadata::new(gas_limit, &config);
+        let mstate = MemoryStackState::new(metadata, &backend);
+        let mut executor = StackExecutor::new_with_precompiles(mstate, &config, &precompile);
         let reason = executor.execute(&mut runtime);
         let gas = executor.gas();
         let (values, logs) = executor.into_state().deconstruct();
