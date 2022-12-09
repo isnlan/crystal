@@ -7,4 +7,5 @@ members = [
     "libs/message",
     "libs/result",
     "libs/evm",
+    "libs/db",
 ]

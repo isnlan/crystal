@@ -528,6 +528,10 @@ dependencies = [
 ]
 
 [[package]]
+name = "db"
+version = "0.1.0"
+
+[[package]]
 name = "der"
 version = "0.6.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -763,11 +767,12 @@ checksum = "0206175f82b8d6bf6652ff7d71a1e27fd2e4efde587fd368662814d6ec1d9ce0"
 name = "evm"
 version = "0.1.0"
 dependencies = [
+ "db",
+ "ethereum-types 0.14.1",
  "evm 0.37.0",
  "hex",
  "log",
  "parity-scale-codec 3.2.1",
- "primitive-types 0.12.1",
  "rlp",
  "scale-info",
  "serde",

@@ -1,10 +1,12 @@
 #[cfg(feature = "std")]
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
+use std::marker::PhantomData;
 use std::rc::Rc;
 use std::str::FromStr;
 
 use codec::{Decode, Encode};
+use ethereum_types::{Address, H160, H256, U256};
 use evm::backend::{ApplyBackend, MemoryAccount, MemoryBackend, MemoryVicinity};
 use evm::executor::stack::{MemoryStackState, StackExecutor, StackSubstateMetadata};
 pub use evm::{
@@ -12,17 +14,67 @@ pub use evm::{
     Config, ExitReason,
 };
 use evm::{executor, Context};
-use primitive_types::{H160, U256};
+use db::{DB, MemoryDB};
+use crate::stack::CrystalStackState;
 
-// #[derive(Clone, Eq, PartialEq, Default, Encode, Decode)]
-// #[cfg_attr(feature = "std", derive(Debug, Serialize, Deserialize))]
-// /// External input from the transaction.
-// pub struct Vicinity {
-//     /// Current transaction gas price.
-//     pub gas_price: U256,
-//     /// Origin of the transaction.
-//     pub origin: H160,
-// }
+#[derive(Clone, Eq, PartialEq, Default, Debug, Encode, Decode)]
+/// External input from the transaction.
+pub struct Vicinity {
+    /// Gas price.
+    pub gas_price: U256,
+    /// Origin.
+    pub origin: H160,
+    /// Chain ID.
+    pub chain_id: U256,
+    /// Environmental block hashes.
+    pub block_hashes: Vec<H256>,
+    /// Environmental block number.
+    pub block_number: U256,
+    /// Environmental coinbase.
+    pub block_coinbase: H160,
+    /// Environmental block timestamp.
+    pub block_timestamp: U256,
+    /// Environmental block difficulty.
+    pub block_difficulty: U256,
+    /// Environmental block gas limit.
+    pub block_gas_limit: U256,
+    /// Environmental base fee per gas.
+    pub block_base_fee_per_gas: U256,
+}
+
+mod stack;
+mod backend;
+
+    #[derive(Clone, Debug)]
+    pub struct Transaction {
+        pub from: Address,
+        pub to: Option<Address>, // Some for call and None for create.
+        pub value: U256,
+        pub nonce: U256,
+        pub gas_limit: u64,
+        pub gas_price: U256,
+        pub input: Vec<u8>,
+    }
+
+
+
+
+pub struct Executive<T: DB> {
+    db: T,
+    config: Config,
+    _marker: PhantomData<T>
+}
+
+impl <T: DB>Executive<T> {
+    pub fn call(tx: Transaction) {
+
+    }
+
+    fn execute() {
+
+    }
+}
+
 
 pub fn call(left: usize, right: usize) -> usize {
     // Execute the EVM call.
@@ -30,6 +82,8 @@ pub fn call(left: usize, right: usize) -> usize {
     //     gas_price: base_fee,
     //     origin: source,
     // };
+
+    // let e = Executive(MemoryDB::new(true));
 
     // let metadata = StackSubstateMetadata::new(gas_limit, config);
     // let state = SubstrateStackState::new(&vicinity, metadata);
@@ -84,7 +138,7 @@ pub fn call(left: usize, right: usize) -> usize {
 
     let mut backend = MemoryBackend::new(&vicinity, state);
     let metadata = StackSubstateMetadata::new(gas_limit, &config);
-    let mstate = MemoryStackState::new(metadata, &backend);
+    let mstate = CrystalStackState::new(metadata, &backend);
     let precompile = BTreeMap::new();
     let mut executor = StackExecutor::new_with_precompiles(mstate, &config, &precompile);
 
@@ -107,21 +161,24 @@ pub fn call(left: usize, right: usize) -> usize {
 
     {
         let data = hex::decode("6d4ce63c").unwrap();
-        let context = Context {
-            address: contract_address,
-            caller: caller,
-            apparent_value: Default::default(),
-        };
-        let mut runtime = evm::Runtime::new(code, Rc::new(data), context, &config);
+        // let context = Context {
+        //     address: contract_address,
+        //     caller: caller,
+        //     apparent_value: Default::default(),
+        // };
+        // let mut runtime = evm::Runtime::new(code, Rc::new(data), context, &config);
 
         let metadata = StackSubstateMetadata::new(gas_limit, &config);
         let mstate = MemoryStackState::new(metadata, &backend);
         let mut executor = StackExecutor::new_with_precompiles(mstate, &config, &precompile);
-        let reason = executor.execute(&mut runtime);
+        let (reasson ,ret) = executor.transact_call(caller, contract_address, Default::default(), data, gas_limit, vec![] );
+        // let reason = executor.execute(&mut runtime);
         let gas = executor.gas();
-        let (values, logs) = executor.into_state().deconstruct();
-        backend.apply(values, logs, false);
-        let ret = runtime.machine().return_value();
+        let state = executor.into_state();
+        // state.substate.
+
+        // backend.apply(values, logs, false);
+        // let ret = runtime.machine().return_value();
 
         println!("{:?}", ret);
     }
