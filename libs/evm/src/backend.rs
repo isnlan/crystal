@@ -1,4 +1,5 @@
 use std::collections::BTreeMap;
+use std::sync::Arc;
 use ethereum_types::{H160, H256, U256};
 use evm::backend::{Apply, ApplyBackend, Backend, Basic, Log};
 use db::DB;
@@ -8,13 +9,13 @@ use crate::Vicinity;
 #[derive(Clone, Debug)]
 pub struct CrystalBackend<'vicinity, T> {
     vicinity: &'vicinity Vicinity,
-    state: T,
+    state: Arc<T>,
     logs: Vec<Log>,
 }
 
 impl<'vicinity, T:DB> CrystalBackend<'vicinity, T> {
     /// Create a new memory backend.
-    pub fn new(vicinity: &'vicinity Vicinity, state: T) -> Self {
+    pub fn new(vicinity: &'vicinity Vicinity, state: Arc<T>) -> Self {
         Self {
             vicinity,
             state,

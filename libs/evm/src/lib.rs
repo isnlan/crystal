@@ -4,11 +4,12 @@ use std::collections::BTreeMap;
 use std::marker::PhantomData;
 use std::rc::Rc;
 use std::str::FromStr;
+use std::sync::Arc;
 
 use codec::{Decode, Encode};
 use ethereum_types::{Address, H160, H256, U256};
 use evm::backend::{ApplyBackend, MemoryAccount, MemoryBackend, MemoryVicinity};
-use evm::executor::stack::{MemoryStackState, StackExecutor, StackSubstateMetadata};
+use evm::executor::stack::{MemoryStackState, PrecompileFn, StackExecutor, StackSubstateMetadata};
 pub use evm::{
     backend::{Basic as Account, Log},
     Config, ExitReason,
@@ -16,6 +17,8 @@ pub use evm::{
 use evm::{executor, Context};
 use db::{DB, MemoryDB};
 use crate::stack::CrystalStackState;
+use anyhow::Result;
+use crate::backend::CrystalBackend;
 
 #[derive(Clone, Eq, PartialEq, Default, Debug, Encode, Decode)]
 /// External input from the transaction.
@@ -56,23 +59,57 @@ mod backend;
         pub input: Vec<u8>,
     }
 
-
-
+#[derive(Clone, Eq, PartialEq, Encode, Decode)]
+pub struct ExecutionInfo<T> {
+    pub exit_reason: ExitReason,
+    pub value: T,
+    pub used_gas: U256,
+    pub logs: Vec<Log>,
+}
 
 pub struct Executive<T: DB> {
-    db: T,
+    db: Arc<T>,
     config: Config,
+    precompile: BTreeMap<H160, PrecompileFn>,
     _marker: PhantomData<T>
 }
 
 impl <T: DB>Executive<T> {
-    pub fn call(tx: Transaction) {
+    pub fn call(&self, tx: Transaction,source: H160, target: H160, gas_limit:u64, value: U256, input: Vec<u8>) {
+        let config = Config::berlin();
+        let vicinity = Vicinity {
+            gas_price: U256::zero(),
+            origin: H160::default(),
+            block_hashes: Vec::new(),
+            block_number: Default::default(),
+            block_coinbase: Default::default(),
+            block_timestamp: Default::default(),
+            block_difficulty: Default::default(),
+            block_gas_limit: Default::default(),
+            chain_id: U256::one(),
+            block_base_fee_per_gas: U256::zero(),
+        };
+
+        let backend = CrystalBackend::new(&vicinity, self.db.clone());
+        let metadata = StackSubstateMetadata::new(gas_limit, &config);
+        let state = CrystalStackState::new(metadata, &backend);
+        let mut executor = StackExecutor::new_with_precompiles(state, &config, &self.precompile);
+        let (reason ,ret) = executor.transact_call(source, target, value, input, gas_limit, vec![] );
+        // let gas = executor.gas();
+        let used_gas = U256::from(executor.used_gas());
+        // let actual_fee = executor.fee(tot)
+
+        let state = executor.into_state();
+        // far address
+
 
     }
 
-    fn execute() {
-
-    }
+    // fn execute<'precompiles,F, R>(caller: H160, value: U256, gas_limit: u64, f: F) -> Result<ExecutionInfo<R>>
+    // where F: FnOnce(&mut StackExecutor<'precompiles, CrystalStackState<'_, '_, T>, T>)
+    // {
+    //     todo!()
+    // }
 }
 
 
