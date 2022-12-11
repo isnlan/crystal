@@ -1,9 +1,9 @@
-use std::collections::BTreeMap;
-use std::sync::Arc;
+use crate::{StorgeDoubelMap, Vicinity};
+use db::DB;
 use ethereum_types::{H160, H256, U256};
 use evm::backend::{Apply, ApplyBackend, Backend, Basic, Log};
-use db::DB;
-use crate::Vicinity;
+use std::collections::BTreeMap;
+use std::sync::Arc;
 
 /// Memory backend, storing all state values in a `BTreeMap` in memory.
 #[derive(Clone, Debug)]
@@ -13,7 +13,7 @@ pub struct CrystalBackend<'vicinity, T> {
     logs: Vec<Log>,
 }
 
-impl<'vicinity, T:DB> CrystalBackend<'vicinity, T> {
+impl<'vicinity, T: DB> CrystalBackend<'vicinity, T> {
     /// Create a new memory backend.
     pub fn new(vicinity: &'vicinity Vicinity, state: Arc<T>) -> Self {
         Self {
@@ -29,7 +29,7 @@ impl<'vicinity, T:DB> CrystalBackend<'vicinity, T> {
     }
 }
 
-impl<'vicinity, T:DB> Backend for CrystalBackend<'vicinity, T> {
+impl<'vicinity, T: DB> Backend for CrystalBackend<'vicinity, T> {
     fn gas_price(&self) -> U256 {
         self.vicinity.gas_price
     }
@@ -39,7 +39,7 @@ impl<'vicinity, T:DB> Backend for CrystalBackend<'vicinity, T> {
     fn block_hash(&self, number: U256) -> H256 {
         if number >= self.vicinity.block_number
             || self.vicinity.block_number - number - U256::one()
-            >= U256::from(self.vicinity.block_hashes.len())
+                >= U256::from(self.vicinity.block_hashes.len())
         {
             H256::default()
         } else {
@@ -94,6 +94,7 @@ impl<'vicinity, T:DB> Backend for CrystalBackend<'vicinity, T> {
     }
 
     fn storage(&self, address: H160, index: H256) -> H256 {
+        let key = StorgeDoubelMap::storage_double_map_final_key(address, index);
         // self.state
         //     .get(&address)
         //     .map(|v| v.storage.get(&index).cloned().unwrap_or_default())
@@ -106,12 +107,12 @@ impl<'vicinity, T:DB> Backend for CrystalBackend<'vicinity, T> {
     }
 }
 
-impl<'vicinity, T:DB> ApplyBackend for CrystalBackend<'vicinity, T> {
+impl<'vicinity, T: DB> ApplyBackend for CrystalBackend<'vicinity, T> {
     fn apply<A, I, L>(&mut self, values: A, logs: L, delete_empty: bool)
-        where
-            A: IntoIterator<Item = Apply<I>>,
-            I: IntoIterator<Item = (H256, H256)>,
-            L: IntoIterator<Item = Log>,
+    where
+        A: IntoIterator<Item = Apply<I>>,
+        I: IntoIterator<Item = (H256, H256)>,
+        L: IntoIterator<Item = Log>,
     {
         for apply in values {
             match apply {

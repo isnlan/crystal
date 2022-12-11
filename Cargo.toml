@@ -8,4 +8,5 @@ members = [
     "libs/result",
     "libs/evm",
     "libs/db",
+    "libs/hashing",
 ]

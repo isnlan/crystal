@@ -1,7 +1,10 @@
 use std::collections::HashMap;
 use std::error::Error;
 use std::io;
-use std::sync::{Arc, PoisonError, RwLock};
+use std::sync::{Arc, RwLock};
+
+mod generator;
+pub use generator::*;
 
 pub trait DB: Send + Sync {
     type Error: Error;

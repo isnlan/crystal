@@ -16,4 +16,5 @@ codec = { package = "parity-scale-codec", version = "3.2.1", default-features = 
 rlp = { version = "0.5", default-features = false }
 scale-info = { version = "2.3.0", default-features = false, features = ["derive"] }
 db = { path = "../db"}
+hashing = { path = "../hashing"}
 anyhow = "1.0.66"
