@@ -21,6 +21,10 @@ pub use evm::{
 };
 use evm::{executor, Context};
 
+mod account;
+mod backend;
+mod stack;
+
 #[derive(Clone, Eq, PartialEq, Default, Debug, Encode, Decode)]
 /// External input from the transaction.
 pub struct Vicinity {
@@ -45,9 +49,6 @@ pub struct Vicinity {
     /// Environmental base fee per gas.
     pub block_base_fee_per_gas: U256,
 }
-
-mod backend;
-mod stack;
 
 pub struct StorgeDoubelMap;
 
@@ -109,7 +110,7 @@ pub struct Executive<T: DB> {
 }
 
 impl<T: DB> Executive<T> {
-    pub fn call(
+    pub fn call<R>(
         &self,
         tx: Transaction,
         source: H160,
@@ -117,7 +118,7 @@ impl<T: DB> Executive<T> {
         gas_limit: u64,
         value: U256,
         input: Vec<u8>,
-    ) {
+    ) -> Result<ExecutionInfo<R>> {
         let config = Config::berlin();
         let vicinity = Vicinity {
             gas_price: U256::zero(),
@@ -137,6 +138,7 @@ impl<T: DB> Executive<T> {
         let state = CrystalStackState::new(metadata, &backend);
         let mut executor = StackExecutor::new_with_precompiles(state, &config, &self.precompile);
         let (reason, ret) = executor.transact_call(source, target, value, input, gas_limit, vec![]);
+        // let address = executor.create_address(evm::CreateScheme::Legacy {caller: source});
         // let gas = executor.gas();
         let used_gas = U256::from(executor.used_gas());
         // let actual_fee = executor.fee(tot)
@@ -149,7 +151,7 @@ impl<T: DB> Executive<T> {
         //     exit_reason: reason,
         //     value: retv,
         //     used_gas,
-        //     logs: state.substate.logs,
+        //     logs: vec![], //state.substate.logs(),
         // })
     }
 

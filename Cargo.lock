@@ -781,6 +781,7 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "db",
+ "ethereum",
  "ethereum-types 0.14.1",
  "evm 0.37.0",
  "hashing",
