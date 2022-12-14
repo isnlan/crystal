@@ -132,9 +132,9 @@ impl<'vicinity, T: KeyValueDB> Backend for CrystalBackend<'vicinity, T> {
         match self.state.get(0, key.as_ref()) {
             Ok(v) => match v {
                 Some(data) => H256::from_slice(data.as_ref()),
-                None => H256::from_slice(vec![].as_ref()),
+                None => H256::zero(),
             },
-            Err(_) => H256::from_slice(vec![].as_ref()),
+            Err(_) => H256::zero(),
         }
     }
 
