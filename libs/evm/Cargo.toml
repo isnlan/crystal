@@ -9,13 +9,21 @@ edition = "2021"
 evm = { version = "0.37.0", default-features = false, features = ["with-codec"] }
 hex = { version = "0.4.3", default-features = false, features = ["alloc"] }
 log = { version = "0.4.17", default-features = false }
+tracing = "0.1.36"
+tracing-subscriber = "0.3.15"
+
 serde = { version = "1.0", optional = true, features = ["derive"] }
 ethereum-types = "0.14.0"
 ethereum = "0.14.0"
 codec = { package = "parity-scale-codec", version = "3.2.1", default-features = false, features = ["derive"] }
-#primitive-types = { version = "0.12.1", default-features = false, features = ["rlp", "byteorder"] }
 rlp = { version = "0.5", default-features = false }
 scale-info = { version = "2.3.0", default-features = false, features = ["derive"] }
+
 db = { path = "../db"}
+
+kvdb = "0.13.0"
+kvdb-rocksdb = "0.17.0"
+
 hashing = { path = "../hashing"}
 anyhow = "1.0.66"
+thiserror = "1.0.37"

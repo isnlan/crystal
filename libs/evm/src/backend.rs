@@ -1,8 +1,10 @@
 use crate::{StorgeDoubelMap, Vicinity};
-use db::DB;
+use anyhow::Ok;
+use ethereum::Account;
 use ethereum_types::{H160, H256, U256};
 use evm::backend::{Apply, ApplyBackend, Backend, Basic, Log};
-use std::collections::BTreeMap;
+use kvdb::KeyValueDB;
+use log::{error, info};
 use std::sync::Arc;
 
 /// Memory backend, storing all state values in a `BTreeMap` in memory.
@@ -13,7 +15,7 @@ pub struct CrystalBackend<'vicinity, T> {
     logs: Vec<Log>,
 }
 
-impl<'vicinity, T: DB> CrystalBackend<'vicinity, T> {
+impl<'vicinity, T: KeyValueDB> CrystalBackend<'vicinity, T> {
     /// Create a new memory backend.
     pub fn new(vicinity: &'vicinity Vicinity, state: Arc<T>) -> Self {
         Self {
@@ -27,9 +29,32 @@ impl<'vicinity, T: DB> CrystalBackend<'vicinity, T> {
     pub fn state(&self) -> &T {
         &self.state
     }
+
+    fn remove(&self, key: &[u8]) {
+        let mut t = self.state.transaction();
+        t.delete(0, key);
+
+        if let Err(err) = self.state.write(t) {
+            error!("remove key error: {}", err);
+        }
+    }
+
+    fn contains(&self, key: &[u8]) -> bool {
+        self.state.has_key(0, key).unwrap_or(false)
+    }
+
+    fn get_account(&self, address: H160) -> Result<Option<Account>, anyhow::Error> {
+        let v = self.state.get(0, address.as_bytes())?;
+        match v {
+            Some(data) => {
+                Ok(rlp::decode(&data)?)
+            }
+            None => Ok(None) 
+        }
+    }
 }
 
-impl<'vicinity, T: DB> Backend for CrystalBackend<'vicinity, T> {
+impl<'vicinity, T: KeyValueDB> Backend for CrystalBackend<'vicinity, T> {
     fn gas_price(&self) -> U256 {
         self.vicinity.gas_price
     }
@@ -71,21 +96,38 @@ impl<'vicinity, T: DB> Backend for CrystalBackend<'vicinity, T> {
     }
 
     fn exists(&self, address: H160) -> bool {
-        self.state.contains(&address.as_bytes()).unwrap()
+        self.contains(&address.as_bytes())
     }
 
     fn basic(&self, address: H160) -> Basic {
-        // self.state
-        //     .get(&address)
-        //     .map(|a| Basic {
-        //         balance: a.balance,
-        //         nonce: a.nonce,
-        //     })
-        //     .unwrap_or_default()
-        todo!()
+        // match self.get_account(address) {
+        //     Ok(v) => {
+        //         match v {
+        //            Some 
+        //         }
+        //     }
+        //     Err(_) => Basic::default()
+        // }
+        self.get_account(address).map(|v|{
+            match v {
+                Some(acc) => {
+                    Basic{
+                        balance: acc.balance,
+                        nonce: acc.nonce,
+                    }
+                }
+                None => Basic::default()
+            }
+        }).unwrap_or_default()  
     }
 
     fn code(&self, address: H160) -> Vec<u8> {
+        // match self.get_account(address) {
+        //     Some(acc) => {
+        //         let code = acc.
+        //     }
+
+        // }
         // self.state
         //     .get(&address)
         //     .map(|v| v.code.clone())
@@ -107,7 +149,7 @@ impl<'vicinity, T: DB> Backend for CrystalBackend<'vicinity, T> {
     }
 }
 
-impl<'vicinity, T: DB> ApplyBackend for CrystalBackend<'vicinity, T> {
+impl<'vicinity, T: KeyValueDB> ApplyBackend for CrystalBackend<'vicinity, T> {
     fn apply<A, I, L>(&mut self, values: A, logs: L, delete_empty: bool)
     where
         A: IntoIterator<Item = Apply<I>>,
@@ -161,11 +203,11 @@ impl<'vicinity, T: DB> ApplyBackend for CrystalBackend<'vicinity, T> {
                     };
 
                     if is_empty && delete_empty {
-                        self.state.remove(&address.as_bytes()).unwrap();
+                        self.remove(&address.as_bytes())
                     }
                 }
                 Apply::Delete { address } => {
-                    self.state.remove(&address.as_bytes()).unwrap();
+                    self.remove(&address.as_bytes());
                 }
             }
         }

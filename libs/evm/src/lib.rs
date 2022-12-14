@@ -1,4 +1,5 @@
 use hashing::twox_128;
+use kvdb::KeyValueDB;
 #[cfg(feature = "std")]
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
@@ -10,16 +11,16 @@ use std::sync::Arc;
 use crate::backend::CrystalBackend;
 use crate::stack::CrystalStackState;
 use anyhow::Result;
-use codec::{Decode, Encode, EncodeLike};
-use db::{storage_prefix, MemoryDB, DB};
+use codec::{Decode, Encode};
+use db::{storage_prefix, DB};
 use ethereum_types::{Address, H160, H256, U256};
 use evm::backend::{ApplyBackend, MemoryAccount, MemoryBackend, MemoryVicinity};
 use evm::executor::stack::{MemoryStackState, PrecompileFn, StackExecutor, StackSubstateMetadata};
+use evm::Context;
 pub use evm::{
     backend::{Basic as Account, Log},
     Config, ExitReason,
 };
-use evm::{executor, Context};
 
 mod account;
 mod backend;
@@ -102,17 +103,16 @@ pub struct ExecutionInfo<T> {
     pub logs: Vec<Log>,
 }
 
-pub struct Executive<T: DB> {
+pub struct Executive<T> {
     db: Arc<T>,
     config: Config,
     precompile: BTreeMap<H160, PrecompileFn>,
     _marker: PhantomData<T>,
 }
 
-impl<T: DB> Executive<T> {
+impl<T: KeyValueDB> Executive<T> {
     pub fn call<R>(
         &self,
-        tx: Transaction,
         source: H160,
         target: H160,
         gas_limit: u64,
