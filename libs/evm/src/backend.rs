@@ -1,10 +1,10 @@
 use crate::{StorgeDoubelMap, Vicinity};
-use anyhow::Ok;
+use anyhow::Result;
 use ethereum::Account;
 use ethereum_types::{H160, H256, U256};
 use evm::backend::{Apply, ApplyBackend, Backend, Basic, Log};
 use kvdb::KeyValueDB;
-use log::{error, info};
+use log::error;
 use std::sync::Arc;
 
 /// Memory backend, storing all state values in a `BTreeMap` in memory.
@@ -43,13 +43,11 @@ impl<'vicinity, T: KeyValueDB> CrystalBackend<'vicinity, T> {
         self.state.has_key(0, key).unwrap_or(false)
     }
 
-    fn get_account(&self, address: H160) -> Result<Option<Account>, anyhow::Error> {
+    fn get_account(&self, address: H160) -> Result<Option<Account>> {
         let v = self.state.get(0, address.as_bytes())?;
         match v {
-            Some(data) => {
-                Ok(rlp::decode(&data)?)
-            }
-            None => Ok(None) 
+            Some(data) => Ok(rlp::decode(&data)?),
+            None => Ok(None),
         }
     }
 }
@@ -100,48 +98,44 @@ impl<'vicinity, T: KeyValueDB> Backend for CrystalBackend<'vicinity, T> {
     }
 
     fn basic(&self, address: H160) -> Basic {
-        // match self.get_account(address) {
-        //     Ok(v) => {
-        //         match v {
-        //            Some 
-        //         }
-        //     }
-        //     Err(_) => Basic::default()
-        // }
-        self.get_account(address).map(|v|{
-            match v {
-                Some(acc) => {
-                    Basic{
-                        balance: acc.balance,
-                        nonce: acc.nonce,
-                    }
-                }
-                None => Basic::default()
-            }
-        }).unwrap_or_default()  
+        self.get_account(address)
+            .map(|v| match v {
+                Some(acc) => Basic {
+                    balance: acc.balance,
+                    nonce: acc.nonce,
+                },
+                None => Basic::default(),
+            })
+            .unwrap_or_default()
     }
 
     fn code(&self, address: H160) -> Vec<u8> {
-        // match self.get_account(address) {
-        //     Some(acc) => {
-        //         let code = acc.
-        //     }
+        let code_hash = match self.get_account(address) {
+            Ok(acc) => match acc {
+                Some(acc) => acc.code_hash,
+                None => return vec![],
+            },
+            Err(_) => return vec![],
+        };
 
-        // }
-        // self.state
-        //     .get(&address)
-        //     .map(|v| v.code.clone())
-        //     .unwrap_or_default()
-        todo!()
+        match self.state.get(0, code_hash.as_bytes()) {
+            Ok(v) => match v {
+                Some(code) => code,
+                None => vec![],
+            },
+            Err(_) => vec![],
+        }
     }
 
     fn storage(&self, address: H160, index: H256) -> H256 {
         let key = StorgeDoubelMap::storage_double_map_final_key(address, index);
-        // self.state
-        //     .get(&address)
-        //     .map(|v| v.storage.get(&index).cloned().unwrap_or_default())
-        //     .unwrap_or_default()
-        todo!()
+        match self.state.get(0, key.as_ref()) {
+            Ok(v) => match v {
+                Some(data) => H256::from_slice(data.as_ref()),
+                None => H256::from_slice(vec![].as_ref()),
+            },
+            Err(_) => H256::from_slice(vec![].as_ref()),
+        }
     }
 
     fn original_storage(&self, address: H160, index: H256) -> Option<H256> {
