@@ -25,18 +25,35 @@ impl<'vicinity, T: KeyValueDB> CrystalBackend<'vicinity, T> {
         }
     }
 
+    fn address_key(address: H160) -> StorgeDoubelMap {
+        StorgeDoubelMap {
+            module: "evm".as_bytes().to_vec(),
+            storage: address.as_bytes().to_vec(),
+        }
+    }
+
+    fn gen_code_key(address: H160, hash: H256) -> Vec<u8> {
+        Self::address_key(address).storage_double_map_final_key("code", hash)
+    }
+
+    fn gen_code_key_perfix(address: H160) -> Vec<u8> {
+        Self::address_key(address).storage_double_map_key_prefix("code")
+    }
+
+    fn gen_slot_key(address: H160, index: H256) -> Vec<u8> {
+        Self::address_key(address).storage_double_map_final_key("slot", index)
+    }
+
+    fn gen_slot_key_perfix(address: H160) -> Vec<u8> {
+        Self::address_key(address).storage_double_map_key_prefix("slot")
+    }
+
+    fn gen_accout_key(address: H160) -> Vec<u8> {
+        Self::address_key(address).storage_double_map_prefix()
+    }
     /// Get the underlying `BTreeMap` storing the state.
     pub fn state(&self) -> &T {
         &self.state
-    }
-
-    fn remove(&self, key: &[u8]) {
-        let mut t = self.state.transaction();
-        t.delete(0, key);
-
-        if let Err(err) = self.state.write(t) {
-            error!("remove key error: {}", err);
-        }
     }
 
     fn contains(&self, key: &[u8]) -> bool {
@@ -44,11 +61,100 @@ impl<'vicinity, T: KeyValueDB> CrystalBackend<'vicinity, T> {
     }
 
     fn get_account(&self, address: H160) -> Result<Option<Account>> {
-        let v = self.state.get(0, address.as_bytes())?;
+        let v = self.state.get(0, &Self::gen_accout_key(address))?;
         match v {
             Some(data) => Ok(rlp::decode(&data)?),
             None => Ok(None),
         }
+    }
+
+    fn apply<A, I, L>(&mut self, values: A, logs: L, delete_empty: bool) -> Result<()>
+    where
+        A: IntoIterator<Item = Apply<I>>,
+        I: IntoIterator<Item = (H256, H256)>,
+        L: IntoIterator<Item = Log>,
+    {
+        let mut tx = self.state.transaction();
+        for apply in values {
+            match apply {
+                Apply::Modify {
+                    address,
+                    basic,
+                    code,
+                    storage,
+                    reset_storage,
+                } => {
+                    let mut find = false;
+                    let mut account = match self.get_account(address)? {
+                        Some(account) => {
+                            find = true;
+                            account
+                        }
+                        None => Account {
+                            nonce: U256::zero(),
+                            balance: U256::zero(),
+                            storage_root: H256::zero(),
+                            code_hash: H256::zero(),
+                        },
+                    };
+
+                    // let account = self.state.entry(address).or_insert_with(Default::default);
+                    account.balance = basic.balance;
+                    account.nonce = basic.nonce;
+                    let has_code = code.is_some();
+
+                    if let Some(code) = code {
+                        let hash = keccak_hash::keccak(&code);
+                        account.code_hash = hash;
+
+                        tx.put(0, Self::gen_code_key(address, hash).as_ref(), &code)
+                    }
+
+                    if reset_storage && !find {
+                        // account.storage = BTreeMap::new();
+                        // todo remove storge
+                        tx.delete_prefix(0, &Self::gen_slot_key_perfix(address))
+                    }
+
+                    let storage_prefix = Self::gen_slot_key_perfix(address);
+                    let iter = self.state.iter_with_prefix(0, &storage_prefix);
+                    for item in iter {
+                        let (key, value) = item?;
+                        if H256::from_slice(&value) == H256::default() {
+                            tx.delete(0, &key)
+                        }
+                    }
+
+                    for (index, value) in storage {
+                        if value == H256::default() {
+                            // account.storage.remove(&index);
+                            tx.delete(0, &Self::gen_slot_key(address, index));
+                        } else {
+                            // account.storage.insert(index, value);
+                            tx.put(0, &Self::gen_slot_key(address, index), value.as_bytes())
+                        }
+                    }
+
+                    if account.balance == U256::zero()
+                        && account.nonce == U256::zero()
+                        && delete_empty
+                        && (has_code
+                            || self.state.has_key(0, &Self::gen_code_key_perfix(address))?)
+                    {
+                        tx.ops.clear();
+                        tx.delete_prefix(0, &Self::gen_accout_key(address))
+                    }
+                }
+                Apply::Delete { address } => tx.delete_prefix(0, &Self::gen_accout_key(address)),
+            }
+        }
+
+        for log in logs {
+            // self.logs.push(log);
+        }
+
+        self.state.write(tx)?;
+        Ok(())
     }
 }
 
@@ -128,7 +234,8 @@ impl<'vicinity, T: KeyValueDB> Backend for CrystalBackend<'vicinity, T> {
     }
 
     fn storage(&self, address: H160, index: H256) -> H256 {
-        let key = StorgeDoubelMap::storage_double_map_final_key(address, index);
+        let key = Self::gen_slot_key(address, index);
+
         match self.state.get(0, key.as_ref()) {
             Ok(v) => match v {
                 Some(data) => H256::from_slice(data.as_ref()),
@@ -150,64 +257,5 @@ impl<'vicinity, T: KeyValueDB> ApplyBackend for CrystalBackend<'vicinity, T> {
         I: IntoIterator<Item = (H256, H256)>,
         L: IntoIterator<Item = Log>,
     {
-        for apply in values {
-            match apply {
-                Apply::Modify {
-                    address,
-                    basic,
-                    code,
-                    storage,
-                    reset_storage,
-                } => {
-                    let is_empty = {
-                        false
-                        // let account = self.state.entry(address).or_insert_with(Default::default);
-                        // account.balance = basic.balance;
-                        // account.nonce = basic.nonce;
-                        // if let Some(code) = code {
-                        //     account.code = code;
-                        // }
-                        //
-                        // if reset_storage {
-                        //     account.storage = BTreeMap::new();
-                        // }
-                        //
-                        // let zeros = account
-                        //     .storage
-                        //     .iter()
-                        //     .filter(|(_, v)| v == &&H256::default())
-                        //     .map(|(k, _)| *k)
-                        //     .collect::<Vec<H256>>();
-                        //
-                        // for zero in zeros {
-                        //     account.storage.remove(&zero);
-                        // }
-                        //
-                        // for (index, value) in storage {
-                        //     if value == H256::default() {
-                        //         account.storage.remove(&index);
-                        //     } else {
-                        //         account.storage.insert(index, value);
-                        //     }
-                        // }
-                        //
-                        // account.balance == U256::zero()
-                        //     && account.nonce == U256::zero()
-                        //     && account.code.is_empty()
-                    };
-
-                    if is_empty && delete_empty {
-                        self.remove(&address.as_bytes())
-                    }
-                }
-                Apply::Delete { address } => {
-                    self.remove(&address.as_bytes());
-                }
-            }
-        }
-
-        for log in logs {
-            self.logs.push(log);
-        }
     }
 }
