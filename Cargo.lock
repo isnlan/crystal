@@ -780,6 +780,7 @@ dependencies = [
  "hex",
  "keccak-hash",
  "kvdb",
+ "kvdb-memorydb",
  "kvdb-rocksdb",
  "log",
  "parity-scale-codec 3.2.1",
@@ -1767,6 +1768,16 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e7d770dcb02bf6835887c3a979b5107a04ff4bbde97a5f0928d27404a155add9"
 dependencies = [
  "smallvec",
+]
+
+[[package]]
+name = "kvdb-memorydb"
+version = "0.13.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "bf7a85fe66f9ff9cd74e169fdd2c94c6e1e74c412c99a73b4df3200b5d3760b2"
+dependencies = [
+ "kvdb",
+ "parking_lot",
 ]
 
 [[package]]

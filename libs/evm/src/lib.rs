@@ -65,6 +65,17 @@ pub struct Executive<T> {
 }
 
 impl<T: KeyValueDB> Executive<T> {
+    pub fn new(db: Arc<T>) -> Self {
+        Self {
+            db: db,
+            config: Config::berlin(),
+            precompile: Default::default(),
+            _marker: PhantomData::default(),
+        }
+    }
+}
+
+impl<T: KeyValueDB> Executive<T> {
     pub fn call(
         &self,
         source: H160,
@@ -187,20 +198,20 @@ pub fn call(left: usize, right: usize) -> usize {
         contract_address,
         MemoryAccount {
             nonce: U256::one(),
-            balance: U256::from(10000000),
+            balance: U256::from(0),
             storage: BTreeMap::new(),
             code: hex::decode(code).unwrap(),
         },
     );
-    state.insert(
-        caller,
-        MemoryAccount {
-            nonce: U256::one(),
-            balance: U256::from(10000000),
-            storage: BTreeMap::new(),
-            code: Vec::new(),
-        },
-    );
+    // state.insert(
+    //     caller,
+    //     MemoryAccount {
+    //         nonce: U256::one(),
+    //         balance: U256::from(0),
+    //         storage: BTreeMap::new(),
+    //         code: Vec::new(),
+    //     },
+    // );
 
     let mut backend = MemoryBackend::new(&vicinity, state);
     let metadata = StackSubstateMetadata::new(gas_limit, &config);
@@ -237,7 +248,7 @@ pub fn call(left: usize, right: usize) -> usize {
         let metadata = StackSubstateMetadata::new(gas_limit, &config);
         let mstate = MemoryStackState::new(metadata, &backend);
         let mut executor = StackExecutor::new_with_precompiles(mstate, &config, &precompile);
-        let (reasson, ret) = executor.transact_call(
+        let (reason, ret) = executor.transact_call(
             caller,
             contract_address,
             Default::default(),
@@ -253,7 +264,7 @@ pub fn call(left: usize, right: usize) -> usize {
         // backend.apply(values, logs, false);
         // let ret = runtime.machine().return_value();
 
-        println!("{:?}", ret);
+        println!("{:?}:{:?}", reason,ret);
     }
     return left + right;
 }
@@ -263,8 +274,78 @@ mod tests {
     use super::*;
 
     #[test]
-    fn it_works() {
+    fn it_works2() {
         let result = call(2, 2);
         assert_eq!(result, 4);
+    }
+    #[test]
+    fn it_works() {
+        // let result = call(2, 2);
+        // assert_eq!(result, 4);
+        let kvdb = Arc::new(kvdb_memorydb::create(0));
+        let vicinity = Vicinity {
+            gas_price: Default::default(),
+            origin: Default::default(),
+            chain_id: Default::default(),
+            block_hashes: vec![],
+            block_number: Default::default(),
+            block_coinbase: Default::default(),
+            block_timestamp: Default::default(),
+            block_difficulty: Default::default(),
+            block_gas_limit: Default::default(),
+            block_base_fee_per_gas: Default::default(),
+        };
+        let exec = Executive::new(kvdb.clone());
+
+        let code = "6080604052600436106049576000357c0100000000000000000000000000000\
+                000000000000000000000000000900463ffffffff16806360fe47b114604e57\
+                80636d4ce63c146078575b600080fd5b348015605957600080fd5b506076600\
+                4803603810190808035906020019092919050505060a0565b005b3480156083\
+                57600080fd5b50608a60aa565b6040518082815260200191505060405180910\
+                390f35b8060008190555050565b600080549050905600a165627a7a72305820\
+                99c66a25d59f0aa78f7ebc40748fa1d1fbc335d8d780f284841b30e0365acd9\
+                60029";
+        let code = hex::decode(code).unwrap();
+        let source = H160::from_str("0x0000000000000000000000000000000000000001").unwrap();
+
+        let rev = exec
+            .create(
+                source,
+                code,
+                U256::from(10000000),
+                10000000,
+                None,
+                None,
+                None,
+                vec![],
+                true,
+                false,
+                vicinity.clone(),
+            )
+            .unwrap();
+        println!("code address: {:?}, reason: {:?}", rev.value, rev.exit_reason);
+        println!("=============================");
+
+        let exec2 = Executive::new(kvdb);
+        let data =
+            hex::decode("60fe47b1000000000000000000000000000000000000000000000000000000000000002a")
+                .unwrap();
+        let rev2 = exec2
+            .call(
+                source,
+                rev.value,
+                data,
+                U256::from(10000000),
+                10000000,
+                None,
+                None,
+                None,
+                vec![],
+                true,
+                false,
+                vicinity,
+            )
+            .unwrap();
+        println!("{:?}", rev2.exit_reason);
     }
 }

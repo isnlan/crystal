@@ -27,3 +27,6 @@ kvdb-rocksdb = "0.17.0"
 hashing = { path = "../hashing"}
 anyhow = "1.0.66"
 thiserror = "1.0.37"
+
+[dev-dependencies]
+kvdb-memorydb = "0.13.0"
