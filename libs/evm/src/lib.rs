@@ -12,7 +12,7 @@ use crate::backend::CrystalBackend;
 use crate::stack::CrystalStackState;
 use anyhow::Result;
 use codec::{Decode, Encode};
-use db::{storage_prefix, DB};
+use storage::storage_prefix;
 use ethereum_types::{Address, H160, H256, U256};
 use evm::backend::{ApplyBackend, MemoryAccount, MemoryBackend, MemoryVicinity};
 use evm::executor::stack::{MemoryStackState, PrecompileFn, StackExecutor, StackSubstateMetadata};

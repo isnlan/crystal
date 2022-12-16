@@ -537,13 +537,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "db"
-version = "0.1.0"
-dependencies = [
- "hashing",
-]
-
-[[package]]
 name = "der"
 version = "0.6.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -780,7 +773,6 @@ name = "evm"
 version = "0.1.0"
 dependencies = [
  "anyhow",
- "db",
  "ethereum",
  "ethereum-types 0.14.1",
  "evm 0.37.0",
@@ -794,6 +786,7 @@ dependencies = [
  "rlp",
  "scale-info",
  "serde",
+ "storage",
  "thiserror",
  "tracing",
  "tracing-subscriber",
@@ -3009,6 +3002,13 @@ name = "static_assertions"
 version = "1.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a2eb9349b6444b326872e140eb1cf5e7c522154d69e7a0ffb0fb81c06b37543f"
+
+[[package]]
+name = "storage"
+version = "0.1.0"
+dependencies = [
+ "hashing",
+]
 
 [[package]]
 name = "subtle"

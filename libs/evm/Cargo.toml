@@ -19,7 +19,7 @@ codec = { package = "parity-scale-codec", version = "3.2.1", default-features = 
 rlp = { version = "0.5", default-features = false }
 scale-info = { version = "2.3.0", default-features = false, features = ["derive"] }
 keccak-hash = "0.10.0"
-db = { path = "../db"}
+storage = { path = "../storage"}
 
 kvdb = "0.13.0"
 kvdb-rocksdb = "0.17.0"

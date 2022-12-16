@@ -4,9 +4,10 @@ use ethereum::Account;
 use ethereum_types::{H160, H256, U256};
 use evm::backend::{Apply, ApplyBackend, Backend, Basic, Log};
 use kvdb::KeyValueDB;
-use log::error;
 use std::sync::Arc;
 
+const STORAGE_CODE_KEY:u8 = 1;
+const STORAGE_SLOT_KEY:u8 = 2;
 /// Memory backend, storing all state values in a `BTreeMap` in memory.
 #[derive(Clone, Debug)]
 pub struct CrystalBackend<'vicinity, T> {
@@ -33,21 +34,24 @@ impl<'vicinity, T: KeyValueDB> CrystalBackend<'vicinity, T> {
     }
 
     fn gen_code_key(address: H160, hash: H256) -> Vec<u8> {
-        Self::address_key(address).storage_double_map_final_key("code", hash)
+        Self::address_key(address).storage_double_map_final_key(STORAGE_CODE_KEY, hash)
     }
 
     fn gen_code_key_perfix(address: H160) -> Vec<u8> {
-        Self::address_key(address).storage_double_map_key_prefix("code")
+        Self::address_key(address).storage_double_map_key_prefix(STORAGE_CODE_KEY)
     }
 
     fn gen_slot_key(address: H160, index: H256) -> Vec<u8> {
-        Self::address_key(address).storage_double_map_final_key("slot", index)
+        Self::address_key(address).storage_double_map_final_key(STORAGE_SLOT_KEY, index)
     }
 
+
+    // evm:address+slot+index ->  value
     fn gen_slot_key_perfix(address: H160) -> Vec<u8> {
-        Self::address_key(address).storage_double_map_key_prefix("slot")
+        Self::address_key(address).storage_double_map_key_prefix(STORAGE_SLOT_KEY)
     }
 
+    // evm:address -> account
     fn gen_accout_key(address: H160) -> Vec<u8> {
         Self::address_key(address).storage_double_map_prefix()
     }
@@ -85,6 +89,8 @@ impl<'vicinity, T: KeyValueDB> CrystalBackend<'vicinity, T> {
                     reset_storage,
                 } => {
                     let mut find = false;
+                    let mut tx_sub = self.state.transaction();
+
                     let mut account = match self.get_account(address)? {
                         Some(account) => {
                             find = true;
@@ -98,7 +104,6 @@ impl<'vicinity, T: KeyValueDB> CrystalBackend<'vicinity, T> {
                         },
                     };
 
-                    // let account = self.state.entry(address).or_insert_with(Default::default);
                     account.balance = basic.balance;
                     account.nonce = basic.nonce;
                     let has_code = code.is_some();
@@ -107,13 +112,11 @@ impl<'vicinity, T: KeyValueDB> CrystalBackend<'vicinity, T> {
                         let hash = keccak_hash::keccak(&code);
                         account.code_hash = hash;
 
-                        tx.put(0, Self::gen_code_key(address, hash).as_ref(), &code)
+                        tx_sub.put(0, Self::gen_code_key(address, hash).as_ref(), &code)
                     }
 
-                    if reset_storage && !find {
-                        // account.storage = BTreeMap::new();
-                        // todo remove storge
-                        tx.delete_prefix(0, &Self::gen_slot_key_perfix(address))
+                    if reset_storage {
+                        tx_sub.delete_prefix(0, &Self::gen_slot_key_perfix(address))
                     }
 
                     let storage_prefix = Self::gen_slot_key_perfix(address);
@@ -121,17 +124,17 @@ impl<'vicinity, T: KeyValueDB> CrystalBackend<'vicinity, T> {
                     for item in iter {
                         let (key, value) = item?;
                         if H256::from_slice(&value) == H256::default() {
-                            tx.delete(0, &key)
+                            tx_sub.delete(0, &key)
                         }
                     }
 
                     for (index, value) in storage {
                         if value == H256::default() {
                             // account.storage.remove(&index);
-                            tx.delete(0, &Self::gen_slot_key(address, index));
+                            tx_sub.delete(0, &Self::gen_slot_key(address, index));
                         } else {
                             // account.storage.insert(index, value);
-                            tx.put(0, &Self::gen_slot_key(address, index), value.as_bytes())
+                            tx_sub.put(0, &Self::gen_slot_key(address, index), value.as_bytes())
                         }
                     }
 
@@ -141,17 +144,19 @@ impl<'vicinity, T: KeyValueDB> CrystalBackend<'vicinity, T> {
                         && (has_code
                             || self.state.has_key(0, &Self::gen_code_key_perfix(address))?)
                     {
-                        tx.ops.clear();
+                        tx_sub.ops.clear();
+
                         tx.delete_prefix(0, &Self::gen_accout_key(address))
+                    } else {
+                        tx_sub.put(0, &Self::gen_accout_key(address), &rlp::encode(&account));
+
+                        tx.ops.append(&mut tx_sub.ops);
                     }
                 }
                 Apply::Delete { address } => tx.delete_prefix(0, &Self::gen_accout_key(address)),
             }
         }
 
-        for log in logs {
-            // self.logs.push(log);
-        }
 
         self.state.write(tx)?;
         Ok(())

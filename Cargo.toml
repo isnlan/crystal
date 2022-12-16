@@ -7,6 +7,6 @@ members = [
     "libs/message",
     "libs/result",
     "libs/evm",
-    "libs/db",
+    "libs/storage",
     "libs/hashing",
 ]
