@@ -1,33 +1,30 @@
-use crate::{StorgeDoubelMap, Vicinity};
+use crate::key_mapping::StorageDoubleMap;
+use crate::Vicinity;
 use anyhow::Result;
 use ethereum::Account;
 use ethereum_types::{H160, H256, U256};
 use evm::backend::{Apply, ApplyBackend, Backend, Basic, Log};
 use kvdb::KeyValueDB;
 use std::sync::Arc;
+use tracing::error;
 
-const STORAGE_CODE_KEY:u8 = 1;
-const STORAGE_SLOT_KEY:u8 = 2;
-/// Memory backend, storing all state values in a `BTreeMap` in memory.
+const STORAGE_CODE_KEY: u8 = 1;
+const STORAGE_SLOT_KEY: u8 = 2;
+
 #[derive(Clone, Debug)]
 pub struct CrystalBackend<'vicinity, T> {
     vicinity: &'vicinity Vicinity,
     state: Arc<T>,
-    logs: Vec<Log>,
 }
 
 impl<'vicinity, T: KeyValueDB> CrystalBackend<'vicinity, T> {
     /// Create a new memory backend.
     pub fn new(vicinity: &'vicinity Vicinity, state: Arc<T>) -> Self {
-        Self {
-            vicinity,
-            state,
-            logs: Vec::new(),
-        }
+        Self { vicinity, state }
     }
 
-    fn address_key(address: H160) -> StorgeDoubelMap {
-        StorgeDoubelMap {
+    fn address_key(address: H160) -> StorageDoubleMap {
+        StorageDoubleMap {
             module: "evm".as_bytes().to_vec(),
             storage: address.as_bytes().to_vec(),
         }
@@ -44,7 +41,6 @@ impl<'vicinity, T: KeyValueDB> CrystalBackend<'vicinity, T> {
     fn gen_slot_key(address: H160, index: H256) -> Vec<u8> {
         Self::address_key(address).storage_double_map_final_key(STORAGE_SLOT_KEY, index)
     }
-
 
     // evm:address+slot+index ->  value
     fn gen_slot_key_perfix(address: H160) -> Vec<u8> {
@@ -157,8 +153,8 @@ impl<'vicinity, T: KeyValueDB> CrystalBackend<'vicinity, T> {
             }
         }
 
-
         self.state.write(tx)?;
+
         Ok(())
     }
 }
@@ -262,5 +258,8 @@ impl<'vicinity, T: KeyValueDB> ApplyBackend for CrystalBackend<'vicinity, T> {
         I: IntoIterator<Item = (H256, H256)>,
         L: IntoIterator<Item = Log>,
     {
+        if let Err(err) = self.apply(values, logs, delete_empty) {
+            error!("commit status into db error: {}", err);
+        }
     }
 }

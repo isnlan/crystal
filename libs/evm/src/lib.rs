@@ -1,4 +1,3 @@
-use hashing::twox_128;
 use kvdb::KeyValueDB;
 #[cfg(feature = "std")]
 use serde::{Deserialize, Serialize};
@@ -12,8 +11,7 @@ use crate::backend::CrystalBackend;
 use crate::stack::CrystalStackState;
 use anyhow::Result;
 use codec::{Decode, Encode};
-use storage::storage_prefix;
-use ethereum_types::{Address, H160, H256, U256};
+use ethereum_types::{H160, H256, U256};
 use evm::backend::{ApplyBackend, MemoryAccount, MemoryBackend, MemoryVicinity};
 use evm::executor::stack::{MemoryStackState, PrecompileFn, StackExecutor, StackSubstateMetadata};
 use evm::Context;
@@ -23,6 +21,7 @@ pub use evm::{
 };
 
 mod backend;
+mod key_mapping;
 mod stack;
 
 #[derive(Clone, Eq, PartialEq, Default, Debug, Encode, Decode)]
@@ -50,69 +49,6 @@ pub struct Vicinity {
     pub block_base_fee_per_gas: U256,
 }
 
-pub struct StorgeDoubelMap {
-    pub module: Vec<u8>,
-    pub storage: Vec<u8>,
-}
-
-impl StorgeDoubelMap {
-    pub fn storage_double_map_final_key<KArg1, KArg2>(&self, k1: KArg1, k2: KArg2) -> Vec<u8>
-    where
-        KArg1: Encode,
-        KArg2: Encode,
-    {
-        let storage_prefix = storage_prefix(&self.module, &self.storage);
-        let key1_hashed = k1.using_encoded(twox_128);
-        let key2_hashed = k2.using_encoded(twox_128);
-
-        let mut final_key = Vec::with_capacity(
-            storage_prefix.len() + key1_hashed.as_ref().len() + key2_hashed.as_ref().len(),
-        );
-
-        final_key.extend_from_slice(&storage_prefix);
-        final_key.extend_from_slice(key1_hashed.as_ref());
-        final_key.extend_from_slice(key2_hashed.as_ref());
-
-        final_key
-    }
-
-    pub fn storage_double_map_key_prefix<KArg1>(&self, k1: KArg1) -> Vec<u8>
-    where
-        KArg1: Encode,
-    {
-        let storage_prefix = storage_prefix(&self.module, &self.storage);
-        let key1_hashed = k1.using_encoded(twox_128);
-
-        let mut final_key = Vec::with_capacity(storage_prefix.len() + key1_hashed.as_ref().len());
-
-        final_key.extend_from_slice(&storage_prefix);
-        final_key.extend_from_slice(key1_hashed.as_ref());
-
-        final_key
-    }
-
-    pub fn storage_double_map_prefix(&self) -> Vec<u8> {
-        let storage_prefix = storage_prefix(&self.module, &self.storage);
-
-        let mut final_key = Vec::with_capacity(storage_prefix.len());
-
-        final_key.extend_from_slice(&storage_prefix);
-
-        final_key
-    }
-}
-
-#[derive(Clone, Debug)]
-pub struct Transaction {
-    pub from: Address,
-    pub to: Option<Address>, // Some for call and None for create.
-    pub value: U256,
-    pub nonce: U256,
-    pub gas_limit: u64,
-    pub gas_price: U256,
-    pub input: Vec<u8>,
-}
-
 #[derive(Clone, Eq, PartialEq, Encode, Decode)]
 pub struct ExecutionInfo<T> {
     pub exit_reason: ExitReason,
@@ -129,55 +65,81 @@ pub struct Executive<T> {
 }
 
 impl<T: KeyValueDB> Executive<T> {
-    pub fn call<R>(
+    pub fn call(
         &self,
         source: H160,
         target: H160,
-        gas_limit: u64,
-        value: U256,
         input: Vec<u8>,
-    ) -> Result<ExecutionInfo<R>> {
-        let config = Config::berlin();
-        let vicinity = Vicinity {
-            gas_price: U256::zero(),
-            origin: H160::default(),
-            block_hashes: Vec::new(),
-            block_number: Default::default(),
-            block_coinbase: Default::default(),
-            block_timestamp: Default::default(),
-            block_difficulty: Default::default(),
-            block_gas_limit: Default::default(),
-            chain_id: U256::one(),
-            block_base_fee_per_gas: U256::zero(),
-        };
+        value: U256,
+        gas_limit: u64,
+        max_fee_per_gas: Option<U256>,
+        max_priority_fee_per_gas: Option<U256>,
+        nonce: Option<U256>,
+        access_list: Vec<(H160, Vec<H256>)>,
+        is_transactional: bool,
+        validate: bool,
+        vicinity: Vicinity,
+    ) -> Result<ExecutionInfo<Vec<u8>>> {
+        if validate {
+            // todo validate args
+        }
 
-        let backend = CrystalBackend::new(&vicinity, self.db.clone());
-        let metadata = StackSubstateMetadata::new(gas_limit, &config);
+        let mut backend = CrystalBackend::new(&vicinity, self.db.clone());
+        let metadata = StackSubstateMetadata::new(gas_limit, &self.config);
         let state = CrystalStackState::new(metadata, &backend);
-        let mut executor = StackExecutor::new_with_precompiles(state, &config, &self.precompile);
-        let (reason, ret) = executor.transact_call(source, target, value, input, gas_limit, vec![]);
-        // let address = executor.create_address(evm::CreateScheme::Legacy {caller: source});
+        let mut executor =
+            StackExecutor::new_with_precompiles(state, &self.config, &self.precompile);
+        let (reason, retv) =
+            executor.transact_call(source, target, value, input, gas_limit, vec![]);
         // let gas = executor.gas();
         let used_gas = U256::from(executor.used_gas());
         // let actual_fee = executor.fee(tot)
 
-        let state = executor.into_state();
-        // far address
+        let (value, logs) = executor.into_state().deconstruct();
+        backend.apply(value, vec![], false);
 
-        todo!()
-        // Ok(ExecutionInfo {
-        //     exit_reason: reason,
-        //     value: retv,
-        //     used_gas,
-        //     logs: vec![], //state.substate.logs(),
-        // })
+        Ok(ExecutionInfo {
+            exit_reason: reason,
+            value: retv,
+            used_gas,
+            logs: Vec::from_iter(logs), //logs, //state.substate.logs(),
+        })
     }
 
-    // fn execute<'precompiles,F, R>(caller: H160, value: U256, gas_limit: u64, f: F) -> Result<ExecutionInfo<R>>
-    // where F: FnOnce(&mut StackExecutor<'precompiles, CrystalStackState<'_, '_, T>, T>)
-    // {
-    //     todo!()
-    // }
+    pub fn create(
+        &self,
+        source: H160,
+        init: Vec<u8>,
+        value: U256,
+        gas_limit: u64,
+        max_fee_per_gas: Option<U256>,
+        max_priority_fee_per_gas: Option<U256>,
+        nonce: Option<U256>,
+        access_list: Vec<(H160, Vec<H256>)>,
+        is_transactional: bool,
+        validate: bool,
+        vicinity: Vicinity,
+    ) -> Result<ExecutionInfo<H160>> {
+        let mut backend = CrystalBackend::new(&vicinity, self.db.clone());
+        let metadata = StackSubstateMetadata::new(gas_limit, &self.config);
+        let state = CrystalStackState::new(metadata, &backend);
+        let mut executor =
+            StackExecutor::new_with_precompiles(state, &self.config, &self.precompile);
+        let address = executor.create_address(evm::CreateScheme::Legacy { caller: source });
+
+        let (reason, _) = executor.transact_create(source, value, init, gas_limit, access_list);
+        let used_gas = U256::from(executor.used_gas());
+
+        let (value, logs) = executor.into_state().deconstruct();
+        backend.apply(value, vec![], false);
+
+        Ok(ExecutionInfo {
+            exit_reason: reason,
+            value: address,
+            used_gas,
+            logs: Vec::from_iter(logs), //logs, //state.substate.logs(),
+        })
+    }
 }
 
 pub fn call(left: usize, right: usize) -> usize {
