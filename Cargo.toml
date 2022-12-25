@@ -9,4 +9,5 @@ members = [
     "libs/evm",
     "libs/storage",
     "libs/hashing",
+    "libs/evm-nogas"
 ]

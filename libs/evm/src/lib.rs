@@ -264,7 +264,7 @@ pub fn call(left: usize, right: usize) -> usize {
         // backend.apply(values, logs, false);
         // let ret = runtime.machine().return_value();
 
-        println!("{:?}:{:?}", reason,ret);
+        println!("{:?}:{:?}", reason, ret);
     }
     return left + right;
 }
@@ -323,7 +323,10 @@ mod tests {
                 vicinity.clone(),
             )
             .unwrap();
-        println!("code address: {:?}, reason: {:?}", rev.value, rev.exit_reason);
+        println!(
+            "code address: {:?}, reason: {:?}",
+            rev.value, rev.exit_reason
+        );
         println!("=============================");
 
         let exec2 = Executive::new(kvdb);
