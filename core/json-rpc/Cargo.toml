@@ -6,6 +6,13 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-jsonrpsee = { version = "0.16.2", features = ["server", "macros"] }
-rpc-core = { path = "../../libs/rpc-core"}
 ethereum-types = "0.14.1"
+ethereum = { version = "0.14.0", features = ["with-codec", "with-serde"] }
+jsonrpsee = { version = "0.16.2", features = ["server", "macros"] }
+
+rpc-core = { path = "../../libs/rpc-core" }
+hashing = { path = "../../libs/hashing" }
+txpool = { path = "../../libs/txpool" }
+
+libsecp256k1 = "0.7"
+hex = "0.4.3"

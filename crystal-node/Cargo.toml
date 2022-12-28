@@ -33,6 +33,7 @@ proto = { path = "../libs/proto" }
 json-rpc = { path = "../core/json-rpc" }
 auth = { path = "../core/auth" }
 chain = { path = "../core/chain" }
+txpool = { path = "../libs/txpool" }
 
 jsonrpsee = { version = "0.16.2", features = ["server", "macros"] }
 tower-http = { version = "0.3.4", features = ["full"] }

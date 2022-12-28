@@ -11,4 +11,5 @@ members = [
     "libs/hashing",
 #    "libs/evm-nogas",
     "libs/rpc-core",
+    "libs/txpool",
 ]
