@@ -1,79 +1,139 @@
-use hyper::Method;
-use jsonrpsee::server::{AllowHosts, ServerBuilder};
-use jsonrpsee::RpcModule;
-use proto::{InnerMessage, Message, MessageBus};
-use std::net::SocketAddr;
-use std::sync::Arc;
-use tokio::sync::mpsc::Receiver;
-use tower_http::cors::{Any, CorsLayer};
+use ethereum_types::*;
+use jsonrpsee::core::RpcResult as Result;
+use jsonrpsee::{core::async_trait, server::ServerBuilder};
+use rpc_core::{types::*, EthApiServer};
 
-pub struct Server {
-    rx: Receiver<Message>,
-    bus: Arc<MessageBus>,
-}
+pub struct Server {}
 
 impl Server {
-    pub fn new(rx: Receiver<Message>, bus: Arc<MessageBus>) -> Self {
-        Self { rx, bus }
+    pub fn new() -> Self {
+        Server {}
     }
 
-    pub async fn run(&mut self) -> result::Result<()> {
-        let bus = self.bus.clone();
-        tokio::task::spawn(async {
-            run_json_rpc_server(bus).await.unwrap();
-        });
-
-        while let Some(msg) = self.rx.recv().await {
-            match msg {
-                Message::Close => {
-                    break;
-                }
-                _ => {
-                    self.process(msg).await?;
-                }
-            }
-        }
-
-        Ok(())
+    pub fn accounts(&self) -> Result<Vec<H160>> {
+        let accounts = Vec::new();
+        Ok(accounts)
     }
 
-    async fn process(&mut self, msg: Message) -> result::Result<()> {
-        println!("jsonrpc-- msg {:?}", msg);
-        self.bus.auth_sender.send(msg).await?;
+    pub fn block_number(&self) -> Result<U256> {
+        Ok(U256::zero())
+    }
 
-        Ok(())
+    pub fn chain_id(&self) -> Result<Option<U64>> {
+        Ok(Some(U64::zero()))
+    }
+
+    async fn block_by_hash(&self, _hash: H256, _full: bool) -> Result<Option<RichBlock>> {
+        Ok(None)
+    }
+
+    async fn block_by_number(
+        &self,
+        _number: BlockNumber,
+        _full: bool,
+    ) -> Result<Option<RichBlock>> {
+        Ok(None)
+    }
+
+    async fn transaction_by_hash(&self, _hash: H256) -> Result<Option<Transaction>> {
+        Ok(None)
+    }
+
+    async fn transaction_receipt(&self, _hash: H256) -> Result<Option<Receipt>> {
+        Ok(None)
+    }
+
+    fn balance(&self, _address: H160, _number: Option<BlockNumber>) -> Result<U256> {
+        Ok(U256::zero())
+    }
+
+    fn storage_at(
+        &self,
+        _address: H160,
+        _index: U256,
+        _number: Option<BlockNumber>,
+    ) -> Result<H256> {
+        Ok(H256::default())
+    }
+
+    fn transaction_count(&self, _address: H160, _number: Option<BlockNumber>) -> Result<U256> {
+        Ok(U256::zero())
+    }
+
+    fn code_at(&self, _address: H160, _number: Option<BlockNumber>) -> Result<Bytes> {
+        Ok(Bytes::default())
+    }
+
+    fn call(&self, _request: CallRequest, _number: Option<BlockNumber>) -> Result<Bytes> {
+        Ok(Bytes::default())
+    }
+
+    async fn send_transaction(&self, _request: TransactionRequest) -> Result<H256> {
+        println!("{:?}", _request);
+        Ok(H256::default())
+    }
+
+    async fn send_raw_transaction(&self, _bytes: Bytes) -> Result<H256> {
+        Ok(H256::default())
     }
 }
 
-async fn run_json_rpc_server(bus: Arc<MessageBus>) -> result::Result<()> {
-    let cors = CorsLayer::new()
-        .allow_methods([Method::POST])
-        .allow_origin(Any)
-        .allow_headers([hyper::header::CONTENT_TYPE]);
-    let middleware = tower::ServiceBuilder::new().layer(cors);
+#[async_trait]
+impl EthApiServer for Server {
+    fn accounts(&self) -> Result<Vec<H160>> {
+        self.accounts()
+    }
 
-    let server = ServerBuilder::default()
-        .set_host_filtering(AllowHosts::Any)
-        .set_middleware(middleware)
-        .build("0.0.0.0:7777".parse::<SocketAddr>()?)
-        .await?;
+    fn block_number(&self) -> Result<U256> {
+        self.block_number()
+    }
 
-    let mut module = RpcModule::new(bus);
-    module.register_async_method("say_hello", |x, y| async move {
-        println!("say_hello method called! {:?}", x.clone());
-        let v = vec![1, 2, 2];
+    fn chain_id(&self) -> Result<Option<U64>> {
+        self.chain_id()
+    }
 
-        y.clone()
-            .jsonrpc_sender
-            .send(Message::Inner(InnerMessage::new()))
-            .await
-            .unwrap();
-        Ok(v)
-    })?;
+    async fn block_by_hash(&self, hash: H256, full: bool) -> Result<Option<RichBlock>> {
+        self.block_by_hash(hash, full).await
+    }
 
-    let handle = server.start(module)?;
+    async fn block_by_number(&self, number: BlockNumber, full: bool) -> Result<Option<RichBlock>> {
+        self.block_by_number(number, full).await
+    }
 
-    handle.stopped().await;
+    async fn transaction_by_hash(&self, hash: H256) -> Result<Option<Transaction>> {
+        self.transaction_by_hash(hash).await
+    }
 
-    Ok(())
+    async fn transaction_receipt(&self, hash: H256) -> Result<Option<Receipt>> {
+        self.transaction_receipt(hash).await
+    }
+
+    fn balance(&self, address: H160, number: Option<BlockNumber>) -> Result<U256> {
+        self.balance(address, number)
+    }
+
+    fn storage_at(&self, address: H160, index: U256, number: Option<BlockNumber>) -> Result<H256> {
+        self.storage_at(address, index, number)
+    }
+
+    fn transaction_count(&self, address: H160, number: Option<BlockNumber>) -> Result<U256> {
+        self.transaction_count(address, number)
+    }
+
+    fn code_at(&self, address: H160, number: Option<BlockNumber>) -> Result<Bytes> {
+        self.code_at(address, number)
+    }
+
+    fn call(&self, request: CallRequest, number: Option<BlockNumber>) -> Result<Bytes> {
+        self.call(request, number)
+    }
+
+    async fn send_transaction(&self, request: TransactionRequest) -> Result<H256> {
+        self.send_transaction(request).await
+    }
+
+    async fn send_raw_transaction(&self, bytes: Bytes) -> Result<H256> {
+        self.send_raw_transaction(bytes).await
+    }
 }
+

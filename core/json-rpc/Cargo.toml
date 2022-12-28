@@ -17,3 +17,6 @@ tower-http = { version = "0.3.4", features = ["full"] }
 tower = { version = "0.4.13", features = ["full"] }
 hyper = "0.14.20"
 console-subscriber = "0.1.8"
+
+rpc-core = { path = "../../libs/rpc-core"}
+ethereum-types = "0.14.1"

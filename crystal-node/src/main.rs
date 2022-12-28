@@ -1,3 +1,6 @@
+mod rpc;
+mod service;
+
 use proto::{Message, MessageBus};
 use signal_hook::{
     consts::{SIGHUP, SIGINT, SIGQUIT, SIGTERM},
@@ -29,11 +32,7 @@ async fn run() -> Result<(), Box<dyn std::error::Error>> {
         chain_sender,
     });
 
-    let bus_clone = bus.clone();
-    tokio::spawn(async move {
-        let mut jsonrpc = json_rpc::Server::new(jsonrpc_reciver, bus_clone);
-        jsonrpc.run().await.unwrap();
-    });
+    service::run()?;
 
     let bus_clone = bus.clone();
     tokio::spawn(async move {

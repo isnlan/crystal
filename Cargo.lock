@@ -839,23 +839,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "evm-nogas"
-version = "0.1.0"
-dependencies = [
- "auto_impl",
- "ethereum",
- "evm-core",
- "evm-runtime",
- "log",
- "parity-scale-codec 3.2.1",
- "primitive-types 0.12.1",
- "rlp",
- "scale-info",
- "serde",
- "sha3 0.10.6",
-]
-
-[[package]]
 name = "evm-runtime"
 version = "0.37.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1559,10 +1542,12 @@ name = "json-rpc"
 version = "0.1.0"
 dependencies = [
  "console-subscriber",
+ "ethereum-types 0.14.1",
  "hyper",
  "jsonrpsee",
  "proto",
  "result",
+ "rpc-core",
  "serde_json",
  "tokio",
  "tower",
@@ -1992,12 +1977,16 @@ dependencies = [
  "ethabi 18.0.0",
  "ethereum-types 0.14.1",
  "evm 0.37.0",
+ "hyper",
  "json-rpc",
+ "jsonrpsee",
  "k256",
  "proto",
  "rocksdb",
  "signal-hook",
  "tokio",
+ "tower",
+ "tower-http",
  "tracing",
  "tracing-subscriber",
  "web3",
@@ -2619,6 +2608,18 @@ checksum = "7e9562ea1d70c0cc63a34a22d977753b50cca91cc6b6527750463bd5dd8697bc"
 dependencies = [
  "libc",
  "librocksdb-sys",
+]
+
+[[package]]
+name = "rpc-core"
+version = "0.1.0"
+dependencies = [
+ "ethereum",
+ "ethereum-types 0.14.1",
+ "jsonrpsee",
+ "rustc-hex",
+ "serde",
+ "serde_json",
 ]
 
 [[package]]
