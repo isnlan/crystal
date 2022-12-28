@@ -1,6 +1,6 @@
 use ethereum_types::*;
+use jsonrpsee::core::async_trait;
 use jsonrpsee::core::RpcResult as Result;
-use jsonrpsee::{core::async_trait, server::ServerBuilder};
 use rpc_core::{types::*, EthApiServer};
 
 pub struct Server {}
@@ -136,4 +136,3 @@ impl EthApiServer for Server {
         self.send_raw_transaction(bytes).await
     }
 }
-

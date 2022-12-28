@@ -68,7 +68,7 @@ impl<'vicinity, T: KeyValueDB> CrystalBackend<'vicinity, T> {
         }
     }
 
-    fn apply<A, I, L>(&mut self, values: A, logs: L, delete_empty: bool) -> Result<()>
+    fn apply<A, I, L>(&mut self, values: A, _logs: L, delete_empty: bool) -> Result<()>
     where
         A: IntoIterator<Item = Apply<I>>,
         I: IntoIterator<Item = (H256, H256)>,

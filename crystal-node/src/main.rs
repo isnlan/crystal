@@ -22,7 +22,7 @@ fn init_log() {
 }
 
 async fn run() -> Result<(), Box<dyn std::error::Error>> {
-    let (jsonrpc_sender, jsonrpc_reciver) = tokio::sync::mpsc::channel(1024);
+    let (jsonrpc_sender, _jsonrpc_reciver) = tokio::sync::mpsc::channel(1024);
     let (auth_sender, auth_reciver) = tokio::sync::mpsc::channel(1024);
     let (chain_sender, chain_reciver) = tokio::sync::mpsc::channel(1024);
 

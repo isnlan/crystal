@@ -83,11 +83,11 @@ impl<T: KeyValueDB> Executive<T> {
         input: Vec<u8>,
         value: U256,
         gas_limit: u64,
-        max_fee_per_gas: Option<U256>,
-        max_priority_fee_per_gas: Option<U256>,
-        nonce: Option<U256>,
-        access_list: Vec<(H160, Vec<H256>)>,
-        is_transactional: bool,
+        _max_fee_per_gas: Option<U256>,
+        _max_priority_fee_per_gas: Option<U256>,
+        _nonce: Option<U256>,
+        _access_list: Vec<(H160, Vec<H256>)>,
+        _is_transactional: bool,
         validate: bool,
         vicinity: Vicinity,
     ) -> Result<ExecutionInfo<Vec<u8>>> {
@@ -123,12 +123,12 @@ impl<T: KeyValueDB> Executive<T> {
         init: Vec<u8>,
         value: U256,
         gas_limit: u64,
-        max_fee_per_gas: Option<U256>,
-        max_priority_fee_per_gas: Option<U256>,
-        nonce: Option<U256>,
+        _max_fee_per_gas: Option<U256>,
+        _max_priority_fee_per_gas: Option<U256>,
+        _nonce: Option<U256>,
         access_list: Vec<(H160, Vec<H256>)>,
-        is_transactional: bool,
-        validate: bool,
+        _is_transactional: bool,
+        _validate: bool,
         vicinity: Vicinity,
     ) -> Result<ExecutionInfo<H160>> {
         let mut backend = CrystalBackend::new(&vicinity, self.db.clone());
@@ -230,9 +230,9 @@ pub fn call(left: usize, right: usize) -> usize {
         apparent_value: Default::default(),
     };
     let mut runtime = evm::Runtime::new(code.clone(), Rc::new(data), context, &config);
-    let reason = executor.execute(&mut runtime);
+    let _reason = executor.execute(&mut runtime);
 
-    let gas = executor.gas();
+    let _gas = executor.gas();
     let (values, logs) = executor.into_state().deconstruct();
     backend.apply(values, logs, false);
 
@@ -257,8 +257,8 @@ pub fn call(left: usize, right: usize) -> usize {
             vec![],
         );
         // let reason = executor.execute(&mut runtime);
-        let gas = executor.gas();
-        let state = executor.into_state();
+        let _gas = executor.gas();
+        let _state = executor.into_state();
         // state.substate.
 
         // backend.apply(values, logs, false);

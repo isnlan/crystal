@@ -1,9 +1,6 @@
 use crate::rpc;
-use jsonrpsee::core::client::SubscriptionKind::Method;
-use jsonrpsee::server::AllowHosts::Any;
-use jsonrpsee::server::{AllowHosts, ServerBuilder};
+
 use jsonrpsee::RpcModule;
-use std::net::SocketAddr;
 
 pub fn run() -> anyhow::Result<()> {
     let module = rpc::new()?;

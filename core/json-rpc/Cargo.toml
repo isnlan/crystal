@@ -6,17 +6,6 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-proto = { path = "../../libs/proto" }
-result = { path = "../../libs/result" }
-tokio = { version = "1.22.0", features = ["full"] }
-tracing = "0.1.36"
-
-jsonrpsee = { version = "0.16.2", features = ["full"] }
-serde_json = { version = "1" }
-tower-http = { version = "0.3.4", features = ["full"] }
-tower = { version = "0.4.13", features = ["full"] }
-hyper = "0.14.20"
-console-subscriber = "0.1.8"
-
+jsonrpsee = { version = "0.16.2", features = ["server", "macros"] }
 rpc-core = { path = "../../libs/rpc-core"}
 ethereum-types = "0.14.1"
