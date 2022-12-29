@@ -1,8 +1,12 @@
 use std::sync::Arc;
 use jsonrpsee::RpcModule;
+use txpool::TransactionPool;
 
 
-pub fn new() -> anyhow::Result<RpcModule<()>> {
+pub fn new<P>(pool : Arc<P>, enable_dev_signer: bool) -> anyhow::Result<RpcModule<()>>
+where
+    P: TransactionPool + 'static,
+{
     use json_rpc::{EthApiServer, EthSigner, EthDevSigner};
 
     let mut io = RpcModule::new(());
@@ -12,7 +16,7 @@ pub fn new() -> anyhow::Result<RpcModule<()>> {
         signers.push(Box::new(EthDevSigner::new()) as Box<dyn EthSigner>);
     }
 
-    let pool = Arc::new(txpool::BasicPool::new());
+    // let pool = Arc::new(txpool::BasicPool::new());
 
     io.merge(json_rpc::Server::new(signers, pool).into_rpc())?;
 

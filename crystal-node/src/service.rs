@@ -1,9 +1,12 @@
+use std::sync::Arc;
 use crate::rpc;
 
 use jsonrpsee::RpcModule;
 
 pub fn run() -> anyhow::Result<()> {
-    let module = rpc::new()?;
+    let pool = Arc::new(txpool::BasicPool::new());
+
+    let module = rpc::new(pool, true)?;
 
     tokio::task::spawn(async {
         run_json_rpc_server(module).await.unwrap();

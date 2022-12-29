@@ -12,7 +12,7 @@ impl BasicPool {
 
 impl crate::TransactionPool for BasicPool {
     fn submit_one(&self, tx: TransactionV2) -> anyhow::Result<()> {
-        todo!()
+        Ok(())
     }
 
     fn ready(&self) -> Vec<TransactionV2> {

@@ -30,7 +30,7 @@ impl <P>Server<P> {
     }
 
     pub fn chain_id(&self) -> Result<Option<U64>> {
-        Ok(Some(U64::zero()))
+        Ok(Some(U64::from(1)))
     }
 
     async fn block_by_hash(&self, _hash: H256, _full: bool) -> Result<Option<RichBlock>> {
