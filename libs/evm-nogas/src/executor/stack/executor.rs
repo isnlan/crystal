@@ -3,7 +3,7 @@ use crate::{
     Capture, Config, Context, CreateScheme, ExitError, ExitReason, ExitSucceed, Handler, Opcode,
     Runtime, Stack, Transfer,
 };
-use alloc::{
+use std::{
     collections::{BTreeMap, BTreeSet},
     rc::Rc,
     vec::Vec,

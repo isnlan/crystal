@@ -9,7 +9,7 @@ members = [
     "libs/evm",
     "libs/storage",
     "libs/hashing",
-#    "libs/evm-nogas",
+    "libs/evm-nogas",
     "libs/rpc-core",
     "libs/txpool",
 ]

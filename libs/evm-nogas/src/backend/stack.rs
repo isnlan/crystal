@@ -1,9 +1,10 @@
-use crate::backend::{Apply, Backend, Basic, Log};
-use crate::executor::stack::executor::{Accessed, StackState, StackSubstateMetadata};
-use crate::{ExitError, Transfer};
 use core::mem;
 use std::collections::{BTreeMap, BTreeSet};
-use primitive_types::{H160, H256, U256};
+use ethereum_types::*;
+use evm_core::ExitError;
+use evm_runtime::Transfer;
+use crate::backend::{Apply, Backend, Basic, Log};
+use crate::executor::stack::{Accessed, StackState, StackSubstateMetadata};
 
 #[derive(Clone, Debug)]
 pub struct MemoryStackAccount {
@@ -13,16 +14,16 @@ pub struct MemoryStackAccount {
 }
 
 #[derive(Clone, Debug)]
-pub struct MemoryStackSubstate {
+pub struct CrystalStackSubstate {
     metadata: StackSubstateMetadata,
-    parent: Option<Box<MemoryStackSubstate>>,
+    parent: Option<Box<CrystalStackSubstate>>,
     logs: Vec<Log>,
     accounts: BTreeMap<H160, MemoryStackAccount>,
     storages: BTreeMap<(H160, H256), H256>,
     deletes: BTreeSet<H160>,
 }
 
-impl MemoryStackSubstate {
+impl CrystalStackSubstate {
     pub fn new(metadata: StackSubstateMetadata) -> Self {
         Self {
             metadata,
@@ -390,15 +391,20 @@ impl MemoryStackSubstate {
 }
 
 #[derive(Clone, Debug)]
-pub struct MemoryStackState<'backend, B> {
+pub struct CrystalStackState<'backend, B> {
     backend: &'backend B,
-    substate: MemoryStackSubstate,
+    substate: CrystalStackSubstate,
 }
 
-impl<'backend, B: Backend> Backend for MemoryStackState<'backend, B> {
+impl<'backend, B: Backend> Backend for CrystalStackState<'backend, B> {
     fn gas_price(&self) -> U256 {
         self.backend.gas_price()
     }
+
+    fn gas_left(&self) -> U256 {
+        U256::zero()
+    }
+
     fn origin(&self) -> H160 {
         self.backend.origin()
     }
@@ -422,10 +428,6 @@ impl<'backend, B: Backend> Backend for MemoryStackState<'backend, B> {
     }
     fn block_base_fee_per_gas(&self) -> U256 {
         self.backend.block_base_fee_per_gas()
-    }
-
-    fn gas_left(&self) -> U256 {
-        self.backend.gas_left()
     }
 
     fn chain_id(&self) -> U256 {
@@ -463,7 +465,9 @@ impl<'backend, B: Backend> Backend for MemoryStackState<'backend, B> {
     }
 }
 
-impl<'backend, B: Backend> StackState for MemoryStackState<'backend, B> {
+impl<'backend, B: Backend> StackState
+    for CrystalStackState<'backend, B>
+{
     fn metadata(&self) -> &StackSubstateMetadata {
         self.substate.metadata()
     }
@@ -547,11 +551,11 @@ impl<'backend, B: Backend> StackState for MemoryStackState<'backend, B> {
     }
 }
 
-impl<'backend, B: Backend> MemoryStackState<'backend, B> {
+impl<'backend, B: Backend> CrystalStackState<'backend, B> {
     pub fn new(metadata: StackSubstateMetadata, backend: &'backend B) -> Self {
         Self {
             backend,
-            substate: MemoryStackSubstate::new(metadata),
+            substate: CrystalStackSubstate::new(metadata),
         }
     }
 

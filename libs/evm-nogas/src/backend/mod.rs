@@ -2,20 +2,16 @@
 //!
 //! Backends store state information of the VM, and exposes it to runtime.
 
-mod memory;
+mod backend;
+mod key_mapping;
+mod stack;
 
-pub use self::memory::{MemoryAccount, MemoryBackend, MemoryVicinity};
-
-use alloc::vec::Vec;
+pub use ethereum::Log;
+use codec::{Decode, Encode};
 use primitive_types::{H160, H256, U256};
-
-/// Basic account information.
-#[derive(Clone, Eq, PartialEq, Debug, Default)]
-#[cfg_attr(
-    feature = "with-codec",
-    derive(codec::Encode, codec::Decode, scale_info::TypeInfo)
-)]
-#[cfg_attr(feature = "with-serde", derive(serde::Serialize, serde::Deserialize))]
+pub use backend::CrystalBackend;
+pub use stack::*;
+#[derive(Clone, Eq, PartialEq, Default, Debug, Encode, Decode)]
 pub struct Basic {
     /// Account balance.
     pub balance: U256,
@@ -23,7 +19,29 @@ pub struct Basic {
     pub nonce: U256,
 }
 
-pub use ethereum::Log;
+#[derive(Clone, Eq, PartialEq, Default, Debug, Encode, Decode)]
+pub struct Vicinity {
+    /// Gas price.
+    pub gas_price: U256,
+    /// Origin.
+    pub origin: H160,
+    /// Chain ID.
+    pub chain_id: U256,
+    /// Environmental block hashes.
+    pub block_hashes: Vec<H256>,
+    /// Environmental block number.
+    pub block_number: U256,
+    /// Environmental coinbase.
+    pub block_coinbase: H160,
+    /// Environmental block timestamp.
+    pub block_timestamp: U256,
+    /// Environmental block difficulty.
+    pub block_difficulty: U256,
+    /// Environmental block gas limit.
+    pub block_gas_limit: U256,
+    /// Environmental base fee per gas.
+    pub block_base_fee_per_gas: U256,
+}
 
 /// Apply state operation.
 #[derive(Clone, Debug)]

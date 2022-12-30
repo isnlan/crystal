@@ -477,6 +477,32 @@ dependencies = [
 ]
 
 [[package]]
+name = "evm-nogas"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "auto_impl",
+ "ethereum",
+ "ethereum-types",
+ "evm-core",
+ "evm-runtime",
+ "hashing",
+ "hex",
+ "kvdb",
+ "kvdb-memorydb",
+ "kvdb-rocksdb",
+ "log",
+ "parity-scale-codec",
+ "primitive-types",
+ "rlp",
+ "scale-info",
+ "serde",
+ "sha3",
+ "storage",
+ "thiserror",
+]
+
+[[package]]
 name = "evm-runtime"
 version = "0.37.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
