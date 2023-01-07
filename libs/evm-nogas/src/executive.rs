@@ -3,14 +3,14 @@ use std::collections::BTreeMap;
 use std::marker::PhantomData;
 use std::sync::Arc;
 
+use crate::backend::{ApplyBackend, CrystalBackend, CrystalStackState, Vicinity};
+use crate::executor::stack::{PrecompileFn, StackExecutor, StackSubstateMetadata};
 use anyhow::Result;
 use codec::{Decode, Encode};
 use ethereum::Log;
 use ethereum_types::*;
 use evm_runtime::{Config, CreateScheme};
 use kvdb::KeyValueDB;
-use crate::backend::{Vicinity, CrystalBackend, CrystalStackState, ApplyBackend};
-use crate::executor::stack::{PrecompileFn, StackExecutor, StackSubstateMetadata};
 
 // #[derive(Clone, Eq, PartialEq, Encode, Decode)]
 pub struct ExecutionInfo<T> {
@@ -59,12 +59,11 @@ impl<T: KeyValueDB> Executive<T> {
         }
 
         let mut backend = CrystalBackend::new(&vicinity, self.db.clone());
-        let metadata = StackSubstateMetadata::new( &self.config);
+        let metadata = StackSubstateMetadata::new(&self.config);
         let state = CrystalStackState::new(metadata, &backend);
         let mut executor =
             StackExecutor::new_with_precompiles(state, &self.config, &self.precompile);
-        let (reason, retv) =
-            executor.transact_call(source, target, value, input,  vec![]);
+        let (reason, retv) = executor.transact_call(source, target, value, input, vec![]);
         // let gas = executor.gas();
         // let used_gas = U256::from(executor.used_gas());
         // let actual_fee = executor.fee(tot)
@@ -75,7 +74,7 @@ impl<T: KeyValueDB> Executive<T> {
         Ok(ExecutionInfo {
             exit_reason: reason,
             value: retv,
-            used_gas:U256::zero(),
+            used_gas: U256::zero(),
             logs: Vec::from_iter(logs), //logs, //state.substate.logs(),
         })
     }
@@ -118,8 +117,8 @@ impl<T: KeyValueDB> Executive<T> {
 
 #[cfg(test)]
 mod tests {
-    use core::str::FromStr;
     use super::*;
+    use core::str::FromStr;
 
     #[test]
     fn it_works() {
@@ -155,8 +154,8 @@ mod tests {
             .create(
                 source,
                 code,
-                U256::from(10000000),
-                10000000,
+                U256::from(1000),
+                0,
                 None,
                 None,
                 None,
@@ -181,8 +180,8 @@ mod tests {
                 source,
                 rev.value,
                 data,
-                U256::from(10000000),
-                10000000,
+                U256::zero(),
+                0,
                 None,
                 None,
                 None,
@@ -192,6 +191,6 @@ mod tests {
                 vicinity,
             )
             .unwrap();
-        println!("{:?}", rev2.exit_reason);
+        println!("{:?}: {:?}", rev2.exit_reason, rev2.value);
     }
 }
